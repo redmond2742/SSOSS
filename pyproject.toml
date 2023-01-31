@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ssoss"
+version = "0.3.12"
+authors = [
+  { name="Matt Redmond", email="mr2742@gmail.com" },
+]
+description = "Safe Sightings of Signs and Signals Package"
+keywords = ["traffic signals","sight distance", "gpx", "video"]
+dynamic = ["dependencies"]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
