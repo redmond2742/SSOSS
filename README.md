@@ -82,8 +82,10 @@ Check the printed logs to see the saved output location. Default is:
 where ### is the frame number of the image.
 
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
-
-        video.sync(frame = 200, timestamp="2022-09-08T14:21:54.988Z")
+```python
+         video.sync(frame = 200, timestamp="2022-09-08T14:21:54.988Z")
+```
+       
 
 ## Documentation
 ### Jupter Notebook Examples
