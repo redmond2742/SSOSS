@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ssoss"
-version = "0.3.12"
+version = "0.3.13"
 authors = [
   { name="Matt Redmond", email="mr2742@gmail.com" },
 ]
@@ -21,3 +21,7 @@ classifiers = [
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements.txt"]
+
+[project.urls]
+"Homepage" = "https://github.com/swerty24/ssoss"
+"Bug Tracker" = "https://github.com/swerty24/ssoss/issues"

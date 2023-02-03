@@ -2,7 +2,7 @@
 
 SSOSS is a Python package that helps you verify if traffic signs and signals are visible or obstructed. This is a 
 streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV) as well as
-GPS recorded data file (.GPX) and a synchronized recorded video file. 
+GPS recorded data file (.GPX) and a synchronized recorded video file.
 
 ## Features
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
@@ -10,8 +10,8 @@ GPS recorded data file (.GPX) and a synchronized recorded video file.
 * Image Labeling and animated GIF image tools: Python functions are included to label images or create an animated GIF from multiple images 
 
 ## Requirements
-Python 3.8
-Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml 
+- Python 3.8
+- Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml 
 
 ## Installation
 To install SSOSS, follow these steps:
@@ -49,20 +49,23 @@ Save GPX and Video files to:
 ./in/gpx_video/
 
 #### Example Usage
-        import ssoss as ss
 
-        signals = "signal.csv"
-        gpx = "drive_1.gpx"
+```python
+    import ssoss as ss
 
-        signal_project = ss.ProcessRoadObjects(signals, gpx)
-        sightings = signal_project.intersection_checks()
+    signals_csv = "signal"  # .csv is omitted
+    gpx_file = "drive_1"  # .gpx is omitted
+    
+    signal_project = ProcessRoadObjects(signals_csv, gpx_file)
+    sightings = signal_project.intersection_checks()
+    
+    vid_file = "drive_1.MP4"
+    video = ss.ProcessVideo(vid_file)
+    video.sync(200, "2022-10-24T14:21:54.988Z")  # See Sync Process below
+    video.extract_images(sightings)
+```
 
-        vid_file = "drive_1.MP4"
-        video = ss.ProcessVideo(vid_file)
-        video.sync(200, "2022-10-24T14:21:54.988Z")  #  See Sync Process below
-        video.extract_images(sightings)
-
-At this point, progress bars will be displayed while the images are saved to the output folder.
+At this point, progress bars should load while the images are saved to the output folder.
 
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has
@@ -70,7 +73,9 @@ a helper function to perform a accurate synchronization time. The extract_frames
 video frames between two time vales. When looking at the GPX points, the approximate video time can be estimated 
 and all the frames can be extracted. This method is:
 
+```python
         video.extract_frames_between(start_sec=20, end_sec=40)
+```
 
 Check the printed logs to see the saved output location. Default is:
 ./out/frames/[video filename]/###.jpg

@@ -89,7 +89,7 @@ class ProcessVideo:
 
         return intersection_desc, frames
 
-    def extract_images(self, desc_timestamps):
+    def extract_images(self, desc_timestamps, project):
         """ extract images from video based on description and timestamp zip"""
         intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
         image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
@@ -126,6 +126,8 @@ class ProcessVideo:
             if i > extract_frames[-1]:
                 break
         capture.release()
+
+        self.img_overlay_info_box(self.video_filename, project)
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
     def extract_frames_between(self, start_sec, end_sec, folder=""):
