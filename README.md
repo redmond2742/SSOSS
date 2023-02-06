@@ -89,8 +89,9 @@ Use the frame number and the GPX recorded time to line up the best point to sync
 ## Documentation
 ### Jupter Notebook Examples
 coming soon
-### Helper Functions
-    #### GIF Creator
+### Helper Function: GIF Creator
+Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus
+at an extracted frame, or just more context before and after a sight distance is needed.
 ```python
         video.extract_images(sightings, signal_project, gen_gif=True)
 ```
