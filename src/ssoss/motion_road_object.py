@@ -20,7 +20,7 @@ class GPXPoint:
     """
 
     def __init__(self, id_num: int, t, p: geopy.Point, spd: float):
-        """ TODO: do we need a timezone parameter?
+        """
 
         :param id_num: count number of point in GPX file
         :param t: timestamp of gpx point
@@ -33,9 +33,7 @@ class GPXPoint:
         self.MPHtoFTPS = 1 / self.FTPStoMPH
         self.MStoFTPS = self.MStoMPH * self.MPHtoFTPS
 
-
         # initial variables from GPX file
-
         self.id = id_num
         t_temp = (dateutil.parser.isoparse(t))
         self.t = t_temp.replace(tzinfo=timezone.utc).timestamp()
@@ -50,13 +48,6 @@ class GPXPoint:
         # advanced calculated
         self.intersection_approach_list = None
         self.cumulative_distance = 0.0
-        #self.closest_intersection_list = None                # sorted list
-        #self.approaching_intersection_list = None            # dict:  #   True/False
-        #self.closest_approaching_intersection = None    # sorted list
-        # self.approach_leg(intersection_ID)        # index value
-        # self.sight_distance(leg, intersection_id) # distance in feet
-
-
 
     def get_id(self) -> int:
         return self.id
@@ -91,7 +82,9 @@ class GPXPoint:
         :return: speed in ft/second
         """
         if units == "ft_per_sec":
-            return self.spd * self.MStoFTPS
+            speed = self.spd * self.MStoFTPS
+
+        return speed
 
     def get_prev_gpx_point(self):
         return self.prev_gpx_point  # GPX Point Object
@@ -188,6 +181,7 @@ class GPXPoint:
             return 0
 
     def acceleration(self) -> float:
+        """ acceleration calculation between two GPX points"""
 
         if self.get_next_gpx_point() is not None and self.get_next_timedelta is not None:
             t_delta = self.get_next_timedelta()

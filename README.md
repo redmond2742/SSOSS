@@ -62,7 +62,7 @@ Save GPX and Video files to:
     vid_file = "drive_1.MP4"
     video = ss.ProcessVideo(vid_file)
     video.sync(200, "2022-10-24T14:21:54.988Z")  # See Sync Process below
-    video.extract_images(sightings)
+    video.extract_images(sightings, signal_project)
 ```
 
 At this point, progress bars should load while the images are saved to the output folder.
@@ -83,15 +83,19 @@ where ### is the frame number of the image.
 
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
 ```python
-         video.sync(frame = 200, timestamp="2022-09-08T14:21:54.988Z")
+         video.sync(frame = 200, timestamp="2022-10-24T16:45:54.988Z")
 ```
-       
 
 ## Documentation
 ### Jupter Notebook Examples
 coming soon
 ### Helper Functions
-    GIF creator
+    #### GIF Creator
+```python
+        video.extract_images(sightings, signal_project, gen_gif=True)
+```
+Saves .gif file in ./out/frames/ [video filename] /gif/
+
 ### Heuristic
 
 For Each GPX Point:

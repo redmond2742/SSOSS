@@ -1,7 +1,10 @@
 # !/usr/bin/env python
 # coding: utf-8
+import glob
 import os
+import shutil
 from pathlib import PurePath, Path
+
 
 import dateutil
 import numpy as np
@@ -10,6 +13,8 @@ from tqdm import tqdm
 from datetime import timedelta, timezone, datetime
 
 import cv2
+import imageio
+
 
 
 class ProcessVideo:
@@ -17,7 +22,7 @@ class ProcessVideo:
     def __init__(self, video_filename, in_dir_path=PurePath("./in/"), in_video_dir_path=PurePath("gpx_video/")):
         """Process video files using methods to extract range of frames,
         extract frame at precise UTC time, or generate gif from selection of images.
-        Note: For syncing video and GPX, use set_start_utc()
+        Note: For syncing video and GPX, use sync() method.
 
         :param in_dir_path: filename of video to be processed (include video extension (.mov, .mp4, etc)
         """
@@ -71,6 +76,7 @@ class ProcessVideo:
         return None
 
     def create_pic_list_from_zip(self, i_desc_timestamps):
+        """returns sight distance description text and frame of video to extract as 2 lists"""
         intersection_desc = []
         frames = []
         prev_frame = 0
@@ -89,8 +95,15 @@ class ProcessVideo:
 
         return intersection_desc, frames
 
-    def extract_images(self, desc_timestamps, project):
-        """ extract images from video based on description and timestamp zip"""
+    def extract_images(self, desc_timestamps, project, gen_gif=False):
+        """
+        extract images from video based on description and timestamp zip
+
+        desc_timestamps: sorted list of tuples (filename description, timestamp of sight distance)
+        project: instance of ProcessRoadObjects() class
+
+
+        """
         intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
         image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
         os.makedirs(image_path, exist_ok=True)
@@ -104,7 +117,7 @@ class ProcessVideo:
 
         while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
 
-            for current_frame in tqdm(range(0, extract_frames[-1]), #tqdm(range(0, extract_frames[-1]),
+            for current_frame in tqdm(range(0, extract_frames[-1]),
                           desc="Frame Search",
                           unit=" Frames"):
                 ret, frame = capture.read()
@@ -128,6 +141,8 @@ class ProcessVideo:
         capture.release()
 
         self.img_overlay_info_box(self.video_filename, project)
+        if gen_gif:
+            self.generate_gif(desc_timestamps, project)
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
     def extract_frames_between(self, start_sec, end_sec, folder=""):
@@ -209,15 +224,17 @@ class ProcessVideo:
             #self.video.release()
             """
 
-    def generate_gif_images(self, df, frame_list: list, distance):
+    def generate_gif(self, desc_timestamps, project, distance=100):
         """ creates a folder of images to create a gif
         # /////////////*\\\\\\\\\\\\\\\
-        # calculate frames needed for gif, before "/" and after frame "\" from sight Distance "*" location
+        # For a given sight distance timestamp location "*" calculate frames needed for gif,
+        # before "/" and after frame "\"
 
-        # Algo methodology
+        # methodology
         # 1. find what frames to extract
-        # 2. extract frames into folder for gif
+        # 2. extract frames into folder for .gif
         # 3. create gif from those frames
+        # 4. delete folder of frames and just keep .gif
 
         :param df: dataframe of key points including speed, and descriptions of the point
         :param frame_list: list of key frame at a distance to check sight of static object
@@ -225,22 +242,18 @@ class ProcessVideo:
         :return: Returns a .gif filetype
         """
 
-        # TODO: convert speed from meters/sec to feet per second
-        capture = cv2.VideoCapture(self.video_filepath)
-        print(f'Video is Open: {self.capture.isOpened()}')
+        intersection_desc, frame_list = self.create_pic_list_from_zip(desc_timestamps)
 
-        for i in range(0, len(frame_list)):
+        for i in tqdm(range(0, len(desc_timestamps)),
+                      desc="Generating Images for GIF",
+                      unit=" Location"):
+            gif_path = './out/frames/' + self.video_filename + "/gif/" + intersection_desc[i] + "/"
+            os.makedirs(gif_path, exist_ok=True)
 
-            folder = df.string_desc.loc[i]
-            image_path = './out/frames/gif/' + folder + "/"
-            os.makedirs(image_path, exist_ok=True)
-
-            # assumes constant speed from this center point
-            additional_frames = int((distance / df.spd.loc[i]) * self.fps) + 1
-
-            print(
-                f'center frame: {frame_list[i]}, additional_frame:{additional_frames}'
-            )
+            # crude approx of avg speed between two points.
+            speed = project.get_speed_at_timestamp(desc_timestamps[i][1])
+            if speed is not None:
+                additional_frames = int((distance / speed) * self.fps) + 1
 
             frame_min = 0
             frame_max = self.frame_count
@@ -255,33 +268,38 @@ class ProcessVideo:
             else:
                 frame_max = int(frame_list[i] + additional_frames)
 
-            print(
-                f'min frame: {frame_min}, max frame:{frame_max}/{frame_list[i]}'
-            )
-            # i is df index
             j = 0  # frame index
-
-            capture = cv2.VideoCapture(self.video_file)
-            print(f'Video is Open: {self.capture.isOpened()}')
-
+            capture = cv2.VideoCapture(str(self.video_filepath))
             while capture.isOpened():
                 ret, frame = capture.read()
                 if ret is False:
                     break
-                print(f'intersection #:{i}, frame #:{j}')
                 if frame_min <= j <= frame_max:
                     cv2.imwrite(
-                        image_path + str(j) + ":" + df.string_desc.loc[i] +
-                        '.jpg', frame)
-                    print(
-                        f'PICTURE CAPTURED AT FRAME:{j}: {df.string_desc.loc[i]}'
-                    )
+                        gif_path + str(j) + "-" + intersection_desc[i] + '.jpg', frame)
                 if j > frame_max:
                     break
                 else:
                     j += 1
             i += 1
         capture.release()
+        self.assemble_gif()
+
+    def assemble_gif(self):
+        base_path = "./out/frames/" + self.video_filename + "/gif/"
+        img_folders = sorted(glob.glob(base_path+'*'))
+        kargs = {'duration': 1/9999999999999999}
+        for i in range(0, len(img_folders)):
+            images = []
+            img_folder = os.path.basename(img_folders[i])
+            frame_images = sorted(glob.glob(os.path.join(base_path, img_folder + "/*.jpg")))
+            for j in range(0, len(frame_images)):
+                if j % 5 == 0:
+                    images.append(imageio.imread(frame_images[j]))
+            imageio.mimsave(os.path.join(base_path, img_folder + ".gif"), images, **kargs)
+            print(f'Created Gif: {img_folder}.gif')
+            #  TODO: delete folder of images after gif is created.
+            #  TODO: overwite existing gif option
 
 
 

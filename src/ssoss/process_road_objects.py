@@ -212,13 +212,9 @@ class ProcessRoadObjects:
             )
 
         self.gpx_ver = self.set_gpx_ver()
-
         gpx_file_ref = open(self.gpx_file, "r")
-        # use GPX v1.0, assume speed data otherwise will calculate
-        # if speed is captured in GPX v1.1 as extension data, change version to 1.1
         # TODO: set timezone with lat, lon coordinates:
         #  (https://stackoverflow.com/questions/15742045/getting-time-zone-from-lat-long-coordinates)
-
 
         gpx = gpxpy.parse(gpx_file_ref, version=self.gpx_ver)
         pt_count = 0
@@ -261,21 +257,17 @@ class ProcessRoadObjects:
                             tuple(p),  # tuple of point, lat and lon
                             point.speed
                                  )
-                    ) #  tuple for point for csv file output?.
+                    )
                     pt_count += 1
 
-
         self.gpx_listDF = pd.DataFrame(gpx_load)
-        self.gpx_listDF.to_pickle(self.pickle_file)
-        self.gpx_listDF.to_csv(self.csv_file)
+        #self.gpx_listDF.to_pickle(self.pickle_file)
+        #self.gpx_listDF.to_csv(self.csv_file)
         print(
             f"Processed {pt_count} points of GPX file."
         )
         self.update_gpx_points()
-
         self.gpx_summary()
-
-
         return self.gpx_listDF
 
     def update_gpx_points(self):
@@ -363,10 +355,9 @@ class ProcessRoadObjects:
                         intersection_sd.append(self.intersection_frame_description(sro_id, b_index, d_current, t_shift_acc))
                         intersection_ts.append(t_shift_acc)
 
-        z = zip(intersection_sd, intersection_ts)
-        id_ts = list(z)
-        ret = sorted(id_ts, key=lambda x: x[1])
-
+        z = zip(intersection_sd, intersection_ts)  # create tuples with intersection descriptions and timestamps
+        id_ts = list(z)  # convert zip to list
+        ret = sorted(id_ts, key=lambda x: x[1])  # sort the list by timestamps
         return ret
 
 
@@ -428,7 +419,29 @@ class ProcessRoadObjects:
 
         print(summary)
 
+    @staticmethod
+    def avg_speed(spd1, spd2):
+        return (spd1 + spd2) / 2
 
+    def get_speed_at_timestamp(self, ts):
+        point_list = self.gpx_listDF
+        last_point = len(point_list)-1
+        speed = None
+
+        #  boundary conditions
+        #  first point check
+        if ts < point_list.loc[0][0].get_timestamp():
+            return None
+        #  last point check
+        if ts > point_list.loc[last_point][0].get_timestamp():
+            return None
+
+        for i in range(len(point_list)-1):
+            if point_list.loc[i][0].get_timestamp() <= ts <= point_list.loc[i + 1][0].get_timestamp():
+                speed = self.avg_speed(point_list.loc[i][0].get_speed(), point_list.loc[i+1][0].get_speed())
+                break
+
+        return speed
 
 
 
