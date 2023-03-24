@@ -7,3 +7,5 @@ dist/
 /src/.DS_Store
 /src/ssoss/.DS_Store
 /src/ssoss/.idea/
+
+.idea
