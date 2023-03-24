@@ -53,16 +53,16 @@ Save GPX and Video files to:
 ```python
     import ssoss as ss
 
-    signals_csv = "signal"  # .csv is omitted
-    gpx_file = "drive_1"  # .gpx is omitted
-    
-    signal_project = ProcessRoadObjects(signals_csv, gpx_file)
-    sightings = signal_project.intersection_checks()
-    
-    vid_file = "drive_1.MP4"
-    video = ss.ProcessVideo(vid_file)
-    video.sync(200, "2022-10-24T14:21:54.988Z")  # See Sync Process below
-    video.extract_images(sightings, signal_project)
+signals_csv = "signal"  # .csv is omitted
+gpx_file = "drive_1"  # .gpx is omitted
+
+signal_project = ProcessRoadObjects(signals_csv, gpx_file)
+sightings = signal_project.intersection_checks()
+
+vid_file = "drive_1.MP4"
+video = ss.ProcessVideo(vid_file)
+video.sync(200, "2022-10-24T14:21:54.988Z")  # See Sync Process below
+video.extract_sightings(sightings, signal_project)
 ```
 
 At this point, progress bars should load while the images are saved to the output folder.
@@ -92,8 +92,9 @@ coming soon
 ### Helper Function: GIF Creator
 Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus
 at an extracted frame, or just more context before and after a sight distance is needed.
+
 ```python
-        video.extract_images(sightings, signal_project, gen_gif=True)
+        video.extract_sightings(sightings, signal_project, gen_gif=True)
 ```
 Saves .gif file in ./out/frames/ [video filename] /gif/
 

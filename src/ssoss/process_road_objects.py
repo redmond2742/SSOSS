@@ -2,16 +2,16 @@
 # coding: utf-8
 
 import csv
-import os
 from datetime import datetime, timezone
-from pathlib import Path, PurePath
+from pathlib import Path
 
 import geopy
+from geopy.distance import geodesic, Distance
+
 import gpxpy
 import gpxpy.gpx
 
 import pandas as pd
-from geopy.distance import geodesic, Distance
 import lxml
 from lxml import etree
 from tqdm import tqdm
@@ -23,17 +23,13 @@ from ssoss.motion_road_object import GPXPoint
 class ProcessRoadObjects:
 
     def __init__(self,
-                 signals_filename: str,
-                 gpx_filename: str,
-                 in_dir_path=PurePath("./in/"),
-                 in_gpx_dir_path=PurePath("gpx_video/"),
-                 out_dir_path=PurePath("./out/")
+                 gpx_filestring: str,
+                 signals_filestring: str,
                  ):
         """ Class to process Road Object files. Using January 1st 1970 as time epoc
 
-        :in_dir_path - defaults to ./in/
-        :in_gpx_dir_path = defaults to gpx_video/ folder for both .gpx and video files
-        :out_dir_path = defaults to ./out/
+        :signals_filepath: as string, full directory and filename of sign or signal CSV file
+        :gpx_filepath: as string, full directory and filename of gpx file
         """
 
         self.intersection_listDF = None
@@ -41,13 +37,14 @@ class ProcessRoadObjects:
         self.date_format = "%m-%d-%Y--%H-%M-%S.%f-%Z"
         self.pretty_datetime_format = "%y-%m-%d %H:%M:%S"
 
-        self.in_dir_path = in_dir_path
-        self.in_gpx_dir_path = in_gpx_dir_path
-        self.out_dir_path = out_dir_path
+        self.in_gpx_dir_path = Path(gpx_filestring).parent
+        self.in_dir_path = self.in_gpx_dir_path
+        self.out_dir_path = Path(self.in_dir_path, "/out/") #  self.in_dir_path / "out/"
+        self.out_dir_path.parent.mkdir(exist_ok=True, parents=True)
 
         # init variables
-        self.intersection_filename = signals_filename
-        self.gpx_filename = gpx_filename
+        self.intersection_filename = Path(signals_filestring)
+        self.gpx_filename = Path(gpx_filestring).stem
         self.pickle_file = ''
         self.gpx_file = ''
         self.csv_file = None
@@ -58,23 +55,16 @@ class ProcessRoadObjects:
         self.sum_time_gap = 0.0
         self.sum_total_points = 0.0
 
+        self.intersection_approaches = 0
+
         # scafold directory structure if not present
-        gpx_video_dir = self.in_dir_path / self.in_gpx_dir_path
+        gpx_video_dir = self.in_gpx_dir_path
         p = Path(str(gpx_video_dir))
 
-        if not p.is_dir():
-            os.makedirs(gpx_video_dir, exist_ok=True)
-            os.makedirs(self.out_dir_path, exist_ok=True)
-            print(f"Created ./{self.in_dir_path} and ./{gpx_video_dir}/ directories for input files")
-            print(f"Load formated CSV signal file to {self.in_dir_path}"
-                  f"Load GPX dynamic route file to ./{gpx_video_dir}"
-                  f"Load Video recording files to ./{gpx_video_dir}"
-                  )
 
-        all_intersections_df = self.load_intersection_csv(signals_filename)
-        gpx_df = self.load_gpx_to_obj_df(gpx_filename, use_pickle=False)
-
-
+        all_intersections_df = self.load_intersection_csv(self.intersection_filename)
+        gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=False)
+        self.gpx_summary()
 
     @staticmethod
     def speed_calc(point1, point2, t1, t2) -> float:
@@ -110,7 +100,7 @@ class ProcessRoadObjects:
         i_dist = distance
         ts_utc = round(ts, 3)
         dt_temp = datetime.fromtimestamp(ts, tz=None)
-        date_time = dt_temp.strftime("%a, %b %-d %Y at %I:%-M %p")
+        date_time = dt_temp.strftime("%a, %b %e %Y at %I:%M %p")  # %-[char] gives error for windowsOS
 
         #  don't use "/" when building filename string
         if desc_type == "filename":
@@ -128,7 +118,7 @@ class ProcessRoadObjects:
         :return: dataframe of intersections objects in each row
         """
 
-        csv_intersection_file = PurePath(self.in_dir_path, intersection_filename + ".csv")
+        csv_intersection_file = Path(self.in_dir_path, intersection_filename)
         self.intersection_load = {"id": [], "intersection_obj": []}
 
         with open(csv_intersection_file, "r") as csv_file:
@@ -223,14 +213,15 @@ class ProcessRoadObjects:
                 for point in segment.points:
                     if self.gpx_ver == "1.1":
                         extra_data = {}
-                        extension_data = {
-                            lxml.etree.QName(child).localname: float(child.text)
-                            for child in point.extensions[0]
-                        }
-                        for k, v in extension_data.items():
-                            extra_data[k] = v
-
-                        point.speed = extra_data["speed"]
+                        if len(point.extensions) > 0:
+                            extension_data = {
+                                lxml.etree.QName(child).localname: float(child.text)
+                                for child in point.extensions[0]
+                            }
+                            for k, v in extension_data.items():
+                                extra_data[k] = v
+                            if point.speed is not None:
+                                point.speed = extra_data["speed"]
 
                     p = geopy.Point(
                         latitude=point.latitude,
@@ -358,6 +349,7 @@ class ProcessRoadObjects:
         z = zip(intersection_sd, intersection_ts)  # create tuples with intersection descriptions and timestamps
         id_ts = list(z)  # convert zip to list
         ret = sorted(id_ts, key=lambda x: x[1])  # sort the list by timestamps
+        self.intersection_approaches = len(ret)
         return ret
 
 
@@ -407,9 +399,15 @@ class ProcessRoadObjects:
         # Total distance: {self.simplify_distance(tot_distance)}
         # Number of data points: {self.sum_total_points}
         # Avg. Time Gap between data points: {avg_time_gap} Seconds
+        
         {symbol * width}
         """
         # TODO:
+        # {symbol * width}
+        # IF self.intersection_approaches > 0
+        # Total intersection approaches: {self.intersection_approaches}
+        # Avg. Time per approach: {tot_sec/self.intersection_approaches}
+        # Avg. feet driven per approach: {tot_distance/self.intersection_approaches}
         # difference in GPX and Video file start times and lengths of times
         # Number of images captured:
         # Number of intersections captures: X/ Total intersections (xx.x%)

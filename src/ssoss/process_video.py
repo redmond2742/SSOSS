@@ -4,22 +4,17 @@ import glob
 import os
 import shutil
 from pathlib import PurePath, Path
-
-
+from datetime import timedelta, timezone, datetime
 import dateutil
 import numpy as np
-
 from tqdm import tqdm
-from datetime import timedelta, timezone, datetime
-
 import cv2
 import imageio
 
 
-
 class ProcessVideo:
 
-    def __init__(self, video_filename, in_dir_path=PurePath("./in/"), in_video_dir_path=PurePath("gpx_video/")):
+    def __init__(self, video_filestring: str):
         """Process video files using methods to extract range of frames,
         extract frame at precise UTC time, or generate gif from selection of images.
         Note: For syncing video and GPX, use sync() method.
@@ -28,15 +23,19 @@ class ProcessVideo:
         """
 
         self.DATE_FORMAT = '%m-%d-%Y--%H-%M-%S.%f-%Z'  #ISO 8601 format
-        self.video_filepath = in_dir_path / in_video_dir_path / video_filename  # video path and filename
-        self.video_filename = video_filename
-        self.image_out_path = PurePath("./out/frames/")
+        self.video_dir = Path(video_filestring).parents[0]
+        self.video_filepath = Path(video_filestring)
+        self.video_filename = Path(video_filestring).name
+        self.image_out_path = self.video_dir / "out/"
+        self.image_out_path.parent.mkdir(exist_ok=True, parents=True)
+
         self.fps = self.get_fps()
         self.frame_count = self.get_frame_count()
         self.duration = self.get_duration()
         self.start_time = 0
         self.capture = ""
 
+        self.vid_summary()
 
     def set_start_utc(self, video_start_time):
         self.start_time = video_start_time
@@ -69,10 +68,10 @@ class ProcessVideo:
         if type(ts) is float:
             start_time = ts - elapsed_time
         else:
-            t_temp = (dateutil.parser.isoparse(ts))
+            t_temp = (dateutil.parser.isoparse(ts))  #  isoparse parses ISO-8601 datetime string into datetime.datetime
             start_time = t_temp.replace(tzinfo=timezone.utc).timestamp() - elapsed_time
         self.set_start_utc(start_time)
-        self.vid_summary()
+        self.vid_summary(sync=True)
         return None
 
     def create_pic_list_from_zip(self, i_desc_timestamps):
@@ -95,18 +94,20 @@ class ProcessVideo:
 
         return intersection_desc, frames
 
-    def extract_images(self, desc_timestamps, project, gen_gif=False):
+    def extract_sightings(self, desc_timestamps, project, gen_gif=False):
         """
-        extract images from video based on description and timestamp zip
+        extract sighting images from video based on description and timestamp zip
 
         desc_timestamps: sorted list of tuples (filename description, timestamp of sight distance)
         project: instance of ProcessRoadObjects() class
-
-
         """
+
         intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
-        image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
-        os.makedirs(image_path, exist_ok=True)
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "sightings/")
+        image_path.mkdir(exist_ok=True, parents=True)
+
+        #image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
+        #os.makedirs(image_path, exist_ok=True)
 
         capture = cv2.VideoCapture(str(self.video_filepath))
         frame_count = self.get_frame_count()
@@ -125,8 +126,9 @@ class ProcessVideo:
                     print("ERROR: ret is FALSE on OpenCV image")
                     break
                 if i == extract_frames[j] and j <= len(extract_frames)-1:
-                    cv2.imwrite(
-                        image_path + str(intersection_desc[j]) + '.jpg', frame)
+                    frame_name = str(intersection_desc[j]) + '.jpg'
+                    frame_filepath = image_path / frame_name
+                    cv2.imwrite(str(frame_filepath), frame)
                     print(
                         f'PICTURE CAPTURED AT {extract_frames[j]}: {intersection_desc[j]}, Saved {j + 1} picture(s) of {len(extract_frames)}')
                     j += 1
@@ -145,14 +147,12 @@ class ProcessVideo:
             self.generate_gif(desc_timestamps, project)
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
-    def extract_frames_between(self, start_sec, end_sec, folder=""):
+    def extract_frames_between(self, start_sec, end_sec):
         """ helper function to extract frames from video during a specific time period to estimate offset
             between gpx and video
 
-        :param start_sec:
-        :param end_sec:
-        :param folder:
-        :return:
+        :param start_sec: start time of video to extract image frames
+        :param end_sec: end time of video to extract image frames
         """
         """ 
 
@@ -181,15 +181,11 @@ class ProcessVideo:
                 this uses gpx file and frame of gpx point to calculate when video started=
 
             """
-        # TODO: consider another subfolder for this video filename
-        image_path = './out/frames/' + self.video_filename + "/" + folder + "/"
-        os.makedirs(image_path, exist_ok=True)
-
-        print(str(self.video_filepath))
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "frames/")
+        image_path.mkdir(exist_ok=True, parents=True)
 
         capture = cv2.VideoCapture(str(self.video_filepath))
         #print(f'Video is Open: {self.capture.isOpened()}')
-
         i = 0
         start_frame = int(self.get_fps() * start_sec)
         end_frame = int(self.get_fps() * end_sec)
@@ -199,36 +195,22 @@ class ProcessVideo:
             if ret == False:
                 break
             if start_frame <= i and i <= end_frame:
-                cv2.imwrite(image_path + 'Frame' + str(i) + '.jpg', frame)
-                print(f'Saved Image Frame {i} to {image_path}')
+                frame_name = 'Frame' + str(i) + '.jpg'
+                frame_filepath = image_path / frame_name
+                cv2.imwrite(str(frame_filepath), frame)
+                print(f'Saved Image {i} to {frame_filepath}')
             i += 1
 
             if i > end_frame:
                 capture.release()
                 break
         capture.release()
-        """
-            sd_frame_num = int(time_delay * self.fps)
-    
-            print(f'sd_frame: {sd_frame_num}')
-    
-            for j in range(0, sd_frame_num)+10:
-    
-                ret, frame = self.video.read()
-                if ret == True:
-                    print(j)
-                    if j == sd_frame_num:
-                        cv2.imwrite("filename%d.jpg" % j, frame)
-    
-    
-            #self.video.release()
-            """
 
     def generate_gif(self, desc_timestamps, project, distance=100):
         """ creates a folder of images to create a gif
         # /////////////*\\\\\\\\\\\\\\\
         # For a given sight distance timestamp location "*" calculate frames needed for gif,
-        # before "/" and after frame "\"
+        # before "/" and after"\" frames from a point of interest "*"
 
         # methodology
         # 1. find what frames to extract
@@ -238,7 +220,7 @@ class ProcessVideo:
 
         :param df: dataframe of key points including speed, and descriptions of the point
         :param frame_list: list of key frame at a distance to check sight of static object
-        :param distance: distance in feet before AND after of key frame to make images for
+        :param distance: distance (units=feet) before AND after of key frame to make images for
         :return: Returns a .gif filetype
         """
 
@@ -247,13 +229,16 @@ class ProcessVideo:
         for i in tqdm(range(0, len(desc_timestamps)),
                       desc="Generating Images for GIF",
                       unit=" Location"):
-            gif_path = './out/frames/' + self.video_filename + "/gif/" + intersection_desc[i] + "/"
-            os.makedirs(gif_path, exist_ok=True)
+            gif_basepath = self.video_dir / "out" / self.video_filepath.stem / "gif" / intersection_desc[i]
+            gif_path = Path(gif_basepath)
+            gif_path.mkdir(exist_ok=True, parents=True)
 
             # crude approx of avg speed between two points.
             speed = project.get_speed_at_timestamp(desc_timestamps[i][1])
-            if speed is not None:
+            if speed is not None and speed > 0.0:
                 additional_frames = int((distance / speed) * self.fps) + 1
+            else:
+                additional_frames = 0
 
             frame_min = 0
             frame_max = self.frame_count
@@ -275,8 +260,9 @@ class ProcessVideo:
                 if ret is False:
                     break
                 if frame_min <= j <= frame_max:
-                    cv2.imwrite(
-                        gif_path + str(j) + "-" + intersection_desc[i] + '.jpg', frame)
+                    frame_name = str(j) + "-" + intersection_desc[i] + '.jpg'
+                    frame_filepath = gif_path / frame_name
+                    cv2.imwrite(str(frame_filepath), frame)
                 if j > frame_max:
                     break
                 else:
@@ -286,8 +272,11 @@ class ProcessVideo:
         self.assemble_gif()
 
     def assemble_gif(self):
-        base_path = "./out/frames/" + self.video_filename + "/gif/"
-        img_folders = sorted(glob.glob(base_path+'*'))
+        #base_path = Path(self.video_dir, "out", self.video_filepath.stem, "gif/")
+        gif_files_path = self.video_dir / "out" / self.video_filepath.stem / "gif"
+        base_path = Path(gif_files_path)
+        #base_path = "./out/frames/" + self.video_filename + "/gif/"
+        img_folders = sorted(base_path.glob('*'))
         kargs = {'duration': 1/9999999999999999}
         for i in range(0, len(img_folders)):
             images = []
@@ -308,17 +297,17 @@ class ProcessVideo:
         if sec < 60:
             return f'{sec} seconds'
         elif sec < 3600:
-            min = int(sec / 60)
-            sec_remain = round(sec - min * 60, 2)
-            return f'{min}:{sec_remain} (MM:SS.ss)'
+            minutes = int(sec / 60)
+            sec_remain = round(sec - minutes * 60, 2)
+            return f'{minutes:02}:{sec_remain:05.2f} (MM:SS.ss)'
         elif sec >= 3600:
             hr = int(sec / 3600)
-            min = int(sec / 60)
-            sec_remain = round(sec - min * 60, 2)
-            return f'{hr}:{min}:{sec_remain} (HH:MM:SS.ss)'
+            minutes = int(sec / 60)
+            sec_remain = round(sec - minutes * 60, 2)
+            return f'{hr:02}:{minutes:02}:{sec_remain:05.2f} (HH:MM:SS.ss)'
 
     def sizeConvert(self, size):
-        # size convert
+        # convert filesize to human readable format
         K, M, G = 1024, 1024 ** 2, 1024 ** 3
         if size >= G:
             return str(round(size / G, 2)) + ' GB'
@@ -334,11 +323,12 @@ class ProcessVideo:
         file_byte = os.path.getsize(self.video_filepath)
         return self.sizeConvert(file_byte)
 
-    def vid_summary(self):
+    def vid_summary(self, sync=False):
         #  display values
         width = 70
         title = "VIDEO SUMMARY"
         symbol = "="
+        sync_title = "Sync Start Time"
 
         vid_file = cv2.VideoCapture(str(self.video_filepath))
         if vid_file.isOpened():
@@ -356,12 +346,23 @@ class ProcessVideo:
                 # Frames Per Second: {self.fps}
                 # Total Number of Frames: {self.frame_count}
                 # Total Duration: {self.hr_min_sec(self.get_duration())}
-                # Start Time: {datetime.fromtimestamp(self.start_time, tz=None)}
-                # End Time:   {datetime.fromtimestamp(self.start_time + self.get_duration(), tz=None)}
                 {symbol * width}
                 """
 
-        print(summary)
+        sync_time = f"""
+                    {symbol * width}
+                    {" " * (int(width/2)-int(len(sync_title)/2))}{sync_title}
+                    {symbol * width}
+                    # Start Time: {datetime.fromtimestamp(self.start_time, tz=None)}
+                    # End Time:   {datetime.fromtimestamp(self.start_time + self.get_duration(), tz=None)}
+                    {symbol * width}
+                    """
+
+        if not sync:
+            print(summary)
+        else:
+            print(sync)
+
 
     @staticmethod
     def find_font_scale(label, max_width):
@@ -380,21 +381,25 @@ class ProcessVideo:
         return font_scl
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
-        dir_as_string = str(self.image_out_path) + "/" + vid_filename_dir
+        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "sightings/")
+        label_img_path = Path(img_path, "labeled/")
+        os.makedirs(label_img_path, exist_ok=True)
+
         alpha = 1  # Transparency factor.
         text_font = cv2.FONT_HERSHEY_PLAIN
         font_thickness = 1
 
-        pathlist = Path(dir_as_string).rglob('*.[0-3]-*.jpg') #  filter for images where * is wildcard
+        img_dir_string = str(img_path)
+        label_img_dir_string = str(label_img_path)
+
+        pathlist = Path(img_dir_string).rglob('*.[0-3]-*.jpg') #  filter for images where * is wildcard
         for file in pathlist:
-            filename = str(file).split("/")[-1]
-            img_path = dir_as_string + "/" + filename
+            filename = str(Path(file).name)
+            img_path = img_dir_string + "/" + filename
             img = cv2.imread(img_path)
             overlay = img.copy()
 
-            label_img_dir = dir_as_string + "/labeled/"
-            os.makedirs(label_img_dir, exist_ok=True)
-            label_img_name = label_img_dir + filename
+            label_img_name = str(Path(label_img_path, filename))
 
             # get img dimensions
             img_height, img_width, channels = img.shape

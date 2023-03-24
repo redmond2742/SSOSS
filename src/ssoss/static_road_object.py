@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import math
-
 import geopy
 import geopy.distance
 
