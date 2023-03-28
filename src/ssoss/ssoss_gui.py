@@ -72,6 +72,7 @@ def main():
     video_sync_group.add_argument("-g", "--gif", metavar="Create Animated GIF", help="Generate GIF of Sight Distance", action="store_true", default=False)
 
     args = parser.parse_args()
+    # TODO: convert to generic function for _gui and _cli
 
     if args.gpx_file and args.static_objects:
         project = process_road_objects.ProcessRoadObjects(args.gpx_file.name, args.static_objects.name)

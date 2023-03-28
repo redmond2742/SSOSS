@@ -25,7 +25,7 @@ To use the SSOSS program,
 
 ### A. Input Files
 Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing.
-The intersection CSV file has the following format (as a minimum)
+The intersection CSV file has the following format (as a minimum):
 
 ID, Streetname 1, Streetname 2, Center_Latitude, Center_Longitude, Posted Speed (MPH) of NB Approach, Posted Speed (MPH) of EB Approach, 
 Posted Speed (MPH) of SB Approach, Posted Speed (MPH) of WB Approach, NB Approach Compass Heading, EB Approach Compass Heading,
@@ -39,16 +39,20 @@ Collect data simultaneously:
    a. Record at 5 Megapixel resolution or more
    b. Record at 30 frames per second or higher
 
-### C. Data Processing
-See example notebooks (coming soon)
-#### File Setup
-Save Signal .CSV to:
-./in/
+### C. Data Processing: Argparse Command Line
+```Shell
+(ssoss_virtual_env) python ssoss_cli.py -h
+```
 
-Save GPX and Video files to:
-./in/gpx_video/
+#### Basic Usage
+```Shell
+(ssoss_virtual_env) python ssoss_cli.py --static_objects signals.csv --gpx_file drive.gpx --video_file vid.mov 
+                                        --sync_frame 456 --sync_timestamp 2022-10-24T14:21:54.32Z
+```
 
-#### Example Usage
+
+
+#### Python Notebook
 
 ```python
     import ssoss as ss
@@ -73,22 +77,18 @@ a helper function to perform a accurate synchronization time. The extract_frames
 video frames between two time vales. When looking at the GPX points, the approximate video time can be estimated 
 and all the frames can be extracted. This method is:
 
-```python
-        video.extract_frames_between(start_sec=20, end_sec=40)
+```Shell
+        (ssoss_virtual_env) python ssoss_cli.py -video_file vid.mov --frame_extract_start 4 --frame_extract_end 6
 ```
 
 Check the printed logs to see the saved output location. Default is:
-./out/frames/[video filename]/###.jpg
+./out/[video filename]/frames/###.jpg
 where ### is the frame number of the image.
 
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
-```python
-         video.sync(frame = 200, timestamp="2022-10-24T16:45:54.988Z")
-```
 
 ## Documentation
-### Jupter Notebook Examples
-coming soon
+
 ### Helper Function: GIF Creator
 Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus
 at an extracted frame, or just more context before and after a sight distance is needed.
