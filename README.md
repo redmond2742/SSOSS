@@ -1,8 +1,7 @@
 # Safe Sightings of Signs and Signals (SSOSS)
 
-SSOSS is a Python package that helps you verify if traffic signs and signals are visible or obstructed. This is a 
-streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV) as well as
-GPS recorded data file (.GPX) and a synchronized recorded video file.
+SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway network. This is a 
+streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a synchronized recorded video file.
 
 ## Features
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
@@ -96,7 +95,7 @@ at an extracted frame, or just more context before and after a sight distance is
 ```python
         video.extract_sightings(sightings, signal_project, gen_gif=True)
 ```
-Saves .gif file in ./out/frames/ [video filename] /gif/
+Saves .gif file in ./out/[video filename]/gif/
 
 ### Heuristic
 

@@ -35,7 +35,8 @@ class ProcessVideo:
         self.start_time = 0
         self.capture = ""
 
-        self.vid_summary()
+
+        self.vid_summary(vid_summary=True)
 
     def set_start_utc(self, video_start_time):
         self.start_time = video_start_time
@@ -71,7 +72,7 @@ class ProcessVideo:
             t_temp = (dateutil.parser.isoparse(ts))  #  isoparse parses ISO-8601 datetime string into datetime.datetime
             start_time = t_temp.replace(tzinfo=timezone.utc).timestamp() - elapsed_time
         self.set_start_utc(start_time)
-        self.vid_summary(sync=True)
+        self.vid_summary(vid_summary=False, sync=True)
         return None
 
     def create_pic_list_from_zip(self, i_desc_timestamps):
@@ -94,7 +95,7 @@ class ProcessVideo:
 
         return intersection_desc, frames
 
-    def extract_sightings(self, desc_timestamps, project, gen_gif=False):
+    def extract_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
         extract sighting images from video based on description and timestamp zip
 
@@ -142,7 +143,8 @@ class ProcessVideo:
                 break
         capture.release()
 
-        self.img_overlay_info_box(self.video_filename, project)
+        if label_img:
+            self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
 
@@ -323,12 +325,12 @@ class ProcessVideo:
         file_byte = os.path.getsize(self.video_filepath)
         return self.sizeConvert(file_byte)
 
-    def vid_summary(self, sync=False):
+    def vid_summary(self, vid_summary, sync=False):
         #  display values
         width = 70
         title = "VIDEO SUMMARY"
         symbol = "="
-        sync_title = "Sync Start Time"
+        sync_title = "VIDEO SYNCHRONIZATION SUMMARY"
 
         vid_file = cv2.VideoCapture(str(self.video_filepath))
         if vid_file.isOpened():
@@ -344,7 +346,7 @@ class ProcessVideo:
                 # Video File Size: {self.get_filesize()}
                 # Resolution (w x h): {vid_width} x {vid_height} ({round((vid_width * vid_height)/(1*10**6),1)}MP)
                 # Frames Per Second: {self.fps}
-                # Total Number of Frames: {self.frame_count}
+                # Total Number of Frames: {self.frame_count:,}
                 # Total Duration: {self.hr_min_sec(self.get_duration())}
                 {symbol * width}
                 """
@@ -357,11 +359,10 @@ class ProcessVideo:
                     # End Time:   {datetime.fromtimestamp(self.start_time + self.get_duration(), tz=None)}
                     {symbol * width}
                     """
-
-        if not sync:
+        if vid_summary:
             print(summary)
-        else:
-            print(sync)
+        if sync:
+            print(sync_time)
 
 
     @staticmethod
@@ -391,49 +392,52 @@ class ProcessVideo:
 
         img_dir_string = str(img_path)
         label_img_dir_string = str(label_img_path)
+        pattern_criteria = ['*.[0-3]-*.jpg','[!.]*']
 
-        pathlist = Path(img_dir_string).rglob('*.[0-3]-*.jpg') #  filter for images where * is wildcard
+        #  filter for images where * is wildcard and don't include hidden (.*) files
+        pathlist = [f for f in Path(img_dir_string).rglob('*.[0-3]-*.jpg') if not str(f).startswith(".")]
         for file in pathlist:
-            filename = str(Path(file).name)
-            img_path = img_dir_string + "/" + filename
-            img = cv2.imread(img_path)
-            overlay = img.copy()
+            if not str(file.stem).startswith("."):
+                filename = str(Path(file).name)
+                img_path = img_dir_string + "/" + filename
+                img = cv2.imread(img_path)
+                overlay = img.copy()
 
-            label_img_name = str(Path(label_img_path, filename))
+                label_img_name = str(Path(label_img_path, filename))
 
-            # get img dimensions
-            img_height, img_width, channels = img.shape
-            rect_h = int(img_height * 0.05)
-            rect_w = img_width
-            rect_y = img_height-rect_h
+                # get img dimensions
+                img_height, img_width, channels = img.shape
+                rect_h = int(img_height * 0.05)
+                rect_w = img_width
+                rect_y = img_height-rect_h
 
-            # build label
-            sro_id = int(filename.split(".")[0])
-            b_index = int((filename.rsplit(".")[1])[0:1])
-            distance = 0
-            ts = float(filename.split("-")[-1].replace(".jpg", ""))
-            label = ro_info.intersection_frame_description(sro_id, b_index, distance, ts, desc_type="label")
-            font_scale = self.find_font_scale(label, rect_w)
-            textsize_x, textsize_y = cv2.getTextSize(label, text_font,  font_scale, font_thickness)[0]
-            text_y = int((img_height - rect_h/2.0)+textsize_y/2.0)
+                # build label
+                sro_id = int(filename.split(".")[0])
+                b_index = int((filename.rsplit(".")[1])[0:1])
+                distance = 0
+                ts = float(filename.split("-")[-1].replace(".jpg", ""))
+                label = ro_info.intersection_frame_description(sro_id, b_index, distance, ts, desc_type="label")
+                font_scale = self.find_font_scale(label, rect_w)
+                textsize_x, textsize_y = cv2.getTextSize(label, text_font,  font_scale, font_thickness)[0]
+                text_y = int((img_height - rect_h/2.0)+textsize_y/2.0)
 
-            if textsize_x <= rect_w:
-                text_x = int((rect_w-textsize_x)/2.0)
-            else:
-                text_x = 0
-                label = label[0:rect_w]
+                if textsize_x <= rect_w:
+                    text_x = int((rect_w-textsize_x)/2.0)
+                else:
+                    text_x = 0
+                    label = label[0:rect_w]
 
-            # (x,y))
-            """
-            0,0                                                              img_width,0
-            
-            
-            
-            0, img_height - img_height*5%             img_width, img_height - img_height*5%
-            
-            0,img_height                                             img_width, img_height
-            """
-            cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
-            img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-            cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
-            cv2.imwrite(label_img_name, img_new)
+                # (x,y))
+                """
+                0,0                                                              img_width,0
+                
+                
+                
+                0, img_height - img_height*5%             img_width, img_height - img_height*5%
+                
+                0,img_height                                             img_width, img_height
+                """
+                cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
+                img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+                cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
+                cv2.imwrite(label_img_name, img_new)

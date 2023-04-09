@@ -36,14 +36,14 @@ class ProcessRoadObjects:
         self.intersection_load = None
         self.date_format = "%m-%d-%Y--%H-%M-%S.%f-%Z"
         self.pretty_datetime_format = "%y-%m-%d %H:%M:%S"
-
         self.in_gpx_dir_path = Path(gpx_filestring).parent
         self.in_dir_path = self.in_gpx_dir_path
         self.out_dir_path = Path(self.in_dir_path, "/out/") #  self.in_dir_path / "out/"
         self.out_dir_path.parent.mkdir(exist_ok=True, parents=True)
 
         # init variables
-        self.intersection_filename = Path(signals_filestring)
+        if signals_filestring:
+            self.intersection_filename = Path(signals_filestring)
         self.gpx_filename = Path(gpx_filestring).stem
         self.pickle_file = ''
         self.gpx_file = ''
@@ -61,10 +61,11 @@ class ProcessRoadObjects:
         gpx_video_dir = self.in_gpx_dir_path
         p = Path(str(gpx_video_dir))
 
+        if signals_filestring:
+            all_intersections_df = self.load_intersection_csv(self.intersection_filename)
+        if self.gpx_filename:
+            gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=False)
 
-        all_intersections_df = self.load_intersection_csv(self.intersection_filename)
-        gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=False)
-        self.gpx_summary()
 
     @staticmethod
     def speed_calc(point1, point2, t1, t2) -> float:
@@ -255,9 +256,10 @@ class ProcessRoadObjects:
         #self.gpx_listDF.to_pickle(self.pickle_file)
         #self.gpx_listDF.to_csv(self.csv_file)
         print(
-            f"Processed {pt_count} points of GPX file."
+            f"Processing {pt_count} points of GPX file."
         )
-        self.update_gpx_points()
+        if self.intersection_listDF is not None:
+            self.update_gpx_points()
         self.gpx_summary()
         return self.gpx_listDF
 

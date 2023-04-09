@@ -211,27 +211,31 @@ class Intersection(StaticRoadObject):
         """
 
         # length of stop bar
-        a = geopy.distance.distance(self.stop_bar_d[direction][0],
-                                    self.stop_bar_d[direction][1]).ft
-
-        # if length of stop bar is zero, use center of intersection point.
-        if a <= 0 or self.stop_bar_d is None:
+        if self.stop_bar_d[direction][0] is False or self.stop_bar_d[direction][1] is False:
             dist_to_ctr = geopy.distance.distance(self.pt, dynamic_pt).ft
             return dist_to_ctr
         else:
-            # distance from dynamic point to inside lane stop bar point
-            b = geopy.distance.distance(self.stop_bar_d[direction][0], dynamic_pt).ft
-            # distance from dynamic point to outside lane stop bar point
-            c = geopy.distance.distance(self.stop_bar_d[direction][1], dynamic_pt).ft
+            a = geopy.distance.distance(self.stop_bar_d[direction][0],
+                                    self.stop_bar_d[direction][1]).ft
 
-        # calculate perpendicular distance between stop bar and dynamic object
-        if a is not None and b is not None and c is not None:
-            s = (a + b + c) / 2
-            dist_to_sb = 2. * math.sqrt(abs(s * (s - a) * (s - b) *
-                                           (s - c))) / a
-            return dist_to_sb
-        else:
-            return 0
+        # if length of stop bar is zero, use center of intersection point.
+            if a <= 0 or self.stop_bar_d is None:
+                dist_to_ctr = geopy.distance.distance(self.pt, dynamic_pt).ft
+                return dist_to_ctr
+            else:
+                # distance from dynamic point to inside lane stop bar point
+                b = geopy.distance.distance(self.stop_bar_d[direction][0], dynamic_pt).ft
+                # distance from dynamic point to outside lane stop bar point
+                c = geopy.distance.distance(self.stop_bar_d[direction][1], dynamic_pt).ft
+
+            # calculate perpendicular distance between stop bar and dynamic object
+            if a is not None and b is not None and c is not None:
+                s = (a + b + c) / 2
+                dist_to_sb = 2. * math.sqrt(abs(s * (s - a) * (s - b) *
+                                               (s - c))) / a
+                return dist_to_sb
+            else:
+                return 0
 
 
 def main():
