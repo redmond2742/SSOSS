@@ -3,6 +3,14 @@
 SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway network. This is a 
 streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a synchronized recorded video file.
 
+[SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
+
+
+![SSOSS Windows .exe screenshot](../media/ssoss_screenshot.png?raw=true)
+
+Here is a example sight distance image extracted from video
+![Example sight distance image for intersection approach](../media/15.3-Pine+Taylor St-270-1681584877.816.jpg?raw=true)
+
 ## Features
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
 * Automated data processing: The SSOSS scripts uses a combination of GPS and video data to extract images of traffic signals and/or roadway signs.
@@ -26,9 +34,18 @@ To use the SSOSS program,
 Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing.
 The intersection CSV file has the following format (as a minimum):
 
-ID, Streetname 1, Streetname 2, Center_Latitude, Center_Longitude, Posted Speed (MPH) of NB Approach, Posted Speed (MPH) of EB Approach, 
-Posted Speed (MPH) of SB Approach, Posted Speed (MPH) of WB Approach, NB Approach Compass Heading, EB Approach Compass Heading,
-SB Approach Compass Heading, WB Approach Compass Heading
+| ID# | Cross Street 1 | Cross Street 2 | Center Intersection Latitude | Center Intersection Longitude | NB Approach Posted Speed (MPH) | EB Approach Posted Speed (MPH) | SB Approach Posted Speed (MPH) | WB Approach Posted Speed (MPH) | NB Bearing | EB Bearing | SB Bearing | WB Bearing |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | Pine St | Taylor St | 37.790682244556805 | -122.41229404545489 | 25 | 25 | 25 | 30 | 356.58 | 87.12 | 162.87 | 263.94 |
+
+#### Optional Stop Bar Locations
+For more accurate sight distance images, stop bar locations can be appended to each intersection row. Below shows an example for the Northbound and Eastbound approaches.
+
+| NB Stop Bar West End (Latitude) | NB Stop Bar West End (Longitude) | NB Stop Bar East End (Latitude) | NB Stop Bar East End (Longitude) | EB Stop Bar North End (Latitude) | EB Stop Bar North End (Longitude) | EB Stop Bar South End (Latitude) | EB Stop Bar South End (Longitude) |
+|---|---|---|---|---|---|---|---|
+| 37.79055490933646 | -122.41231165549507 | 37.79056709721846 | -122.41222448370476 | 37.79071792444257 | -122.41241972749047 | 37.790609293471164 | -122.41239692871453 |
+
+
 
 ### B. Data Collection
 Collect data simultaneously:
