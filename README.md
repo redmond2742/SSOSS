@@ -6,10 +6,10 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 [SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
 
 
-![SSOSS Windows .exe screenshot](../media/ssoss_screenshot.png?raw=true)
+![SSOSS Windows .exe screenshot](../media/ssoss_screenshot.png?raw=true  | width=100)
 
 Here is a example sight distance image extracted from video
-![Example sight distance image for intersection approach](../media/15.3-Pine+Taylor St-270-1681584877.816.jpg?raw=true)
+![Example sight distance image for intersection approach](../media/media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true | width=100)
 
 ## Features
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
