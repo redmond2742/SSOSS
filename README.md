@@ -6,7 +6,7 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 [SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
 
 
-![SSOSS Windows .exe screenshot](../media/ssoss_screenshot.png?raw=true  | width=100)
+![SSOSS Windows .exe screenshot | width=100](../media/ssoss_screenshot.png?raw=true)
 
 Here is a example sight distance image extracted from video
 ![Example sight distance image for intersection approach](../media/media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true | width=100)
