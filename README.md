@@ -9,7 +9,19 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 ![SSOSS Windows .exe screenshot | width=100](../media/ssoss_screenshot.png?raw=true)
 
 Here is a example sight distance image extracted from video
-![Example sight distance image for intersection approach](../media/media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true | width=100)
+![Example sight distance image for intersection approach](../media/media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true)
+
+
+<p align="center">
+  <img src="../media/ssoss_screenshot.png?raw=true" width=45% /> 
+    <ins><b><i> SSOSS as Windows EXE Program</i></b></ins>
+  <br>
+  <img src="../media/media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true" width=45% />
+<br>
+<ins><b><i> Sample Image</i></b></ins>
+</p>
+
+
 
 ## Features
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
