@@ -8,11 +8,11 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 
 <p align="center">
   <img src="../media/ssoss_screenshot.png?raw=true" width=45% /> <br>
-  <ins><b><i> SSOSS as Windows EXE Program</i></b></ins>
+  <i> SSOSS as Windows EXE Program</i>
   <br>
-  <img src="../media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true" width=65% />
+  <img src="../media/15.3-Pine%2BTaylor%20St-270-1681584877.816.jpg?raw=true" width=90% />
   <br>
-  <ins><b><i> Sample Sight Distance Image</i></b></ins>
+  <i> Sample Sight Distance Image</i>
 </p>
 
 
