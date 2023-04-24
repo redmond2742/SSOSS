@@ -1,0 +1,10 @@
+.Python
+build/
+dist/
+.DS_Store
+
+/src/.DS_Store
+/src/ssoss/.DS_Store
+/src/ssoss/.idea/
+
+.idea
