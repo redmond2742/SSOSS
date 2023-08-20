@@ -126,38 +126,53 @@ class ProcessRoadObjects:
             csv_reader = csv.reader(csv_file, delimiter=",")
             line_count = 0
             for row in csv_reader:
-                self.intersection_load["id"].append(int(row[0]))
-                self.intersection_load["intersection_obj"].append(
-                    Intersection(
-                        # id_num
-                        int(row[0]),
+                columns_in_row = len(row)
+                print(columns_in_row)
+                if columns_in_row == 29:
+                    self.intersection_load["id"].append(int(row[0]))
+                    self.intersection_load["intersection_obj"].append(Intersection(
+                        id_num = int(row[0]),
                         # name1(N/S), name2(E/W)
-                        tuple((str(row[1]),
-                               str(row[2]))),
-                        # center of intersection location
-                        geopy.Point(float(row[3]),
-                                    float(row[4])),
+                        name = tuple((str(row[1]),str(row[2]))),
+                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
                         # spd_N, spd_E, spd_S, spd_W
-                        tuple((int(row[5]), int(row[6]), int(row[7]),
-                               int(row[8]))),
+                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),
+                            int(row[8]))),
                         # bearing_N, bearing_E, bearing_S, bearing_W
-                        tuple((float(row[9]), float(row[10]), float(row[11]),
-                               float(row[12]))),
+                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
+                            float(row[12]))),
                         # NB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        tuple((geopy.Point(row[13], row[14]),
-                               geopy.Point(row[15], row[16]))),
+                        stop_bar_nb = tuple((geopy.Point(row[13], row[14]),
+                            geopy.Point(row[15], row[16]))),
                         # EB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        tuple((geopy.Point(row[17], row[18]),
-                               geopy.Point(row[19], row[20]))),
+                        stop_bar_eb = tuple((geopy.Point(row[17], row[18]),
+                            geopy.Point(row[19], row[20]))),
                         # SB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        tuple((geopy.Point(row[21], row[22]),
-                               geopy.Point(row[23], row[24]))),
+                        stop_bar_sb = tuple((geopy.Point(row[21], row[22]),
+                            geopy.Point(row[23], row[24]))),
                         # WB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        tuple((geopy.Point(row[25], row[26]),
-                               geopy.Point(row[27], row[28])))
+                        stop_bar_wb = tuple((geopy.Point(row[25], row[26]),
+                            geopy.Point(row[27], row[28])))
                     ))
 
+                elif columns_in_row == 13:
+                    self.intersection_load["id"].append(int(row[0]))
+                    self.intersection_load["intersection_obj"].append(Intersection(
+                        id_num = int(row[0]),
+                        # name1(N/S), name2(E/W)
+                        name = tuple((str(row[1]),str(row[2]))),
+                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
+                        # spd_N, spd_E, spd_S, spd_W
+                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),int(row[8]))),
+                        # bearing_N, bearing_E, bearing_S, bearing_W
+                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
+                            float(row[12])))
+                    ))
+                else:
+                    print("Check intersection input file formatting.")
                 line_count += 1
+
+            print("Error processing Intersection Input CSV File. Check Formatting.")
 
             self.intersection_listDF = pd.DataFrame(self.intersection_load)
             print(
