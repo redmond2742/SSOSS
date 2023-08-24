@@ -118,17 +118,28 @@ class ProcessRoadObjects:
         :param intersection_filename: name of CSV file for loading (leave off .csv)
         :return: dataframe of intersections objects in each row
         """
-
+        
         csv_intersection_file = Path(self.in_dir_path, intersection_filename)
         self.intersection_load = {"id": [], "intersection_obj": []}
-
         with open(csv_intersection_file, "r") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
             line_count = 0
             for row in csv_reader:
                 columns_in_row = len(row)
-                print(columns_in_row)
-                if columns_in_row == 29:
+                if columns_in_row == 13:
+                    self.intersection_load["id"].append(int(row[0]))
+                    self.intersection_load["intersection_obj"].append(Intersection(
+                        id_num = int(row[0]),
+                        # name1(N/S), name2(E/W)
+                        name = tuple((str(row[1]),str(row[2]))),
+                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
+                        # spd_N, spd_E, spd_S, spd_W
+                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),int(row[8]))),
+                        # bearing_N, bearing_E, bearing_S, bearing_W
+                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
+                            float(row[12])))
+                    ))
+                elif columns_in_row == 29:
                     self.intersection_load["id"].append(int(row[0]))
                     self.intersection_load["intersection_obj"].append(Intersection(
                         id_num = int(row[0]),
@@ -154,26 +165,15 @@ class ProcessRoadObjects:
                         stop_bar_wb = tuple((geopy.Point(row[25], row[26]),
                             geopy.Point(row[27], row[28])))
                     ))
-
-                elif columns_in_row == 13:
-                    self.intersection_load["id"].append(int(row[0]))
-                    self.intersection_load["intersection_obj"].append(Intersection(
-                        id_num = int(row[0]),
-                        # name1(N/S), name2(E/W)
-                        name = tuple((str(row[1]),str(row[2]))),
-                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
-                        # spd_N, spd_E, spd_S, spd_W
-                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),int(row[8]))),
-                        # bearing_N, bearing_E, bearing_S, bearing_W
-                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
-                            float(row[12])))
-                    ))
                 else:
-                    print("Check intersection input file formatting.")
+                    print("Check intersection input file formatting.\n"
+                          "Input should be:\n"
+                          "#,Street Name1, Steet Name2, Latitude, Longitude, Speed Limit_NB, SL_EB, SL_SB, SL_WB, Bearing_NB, B_EB, B_SB, B_WB\n"
+                          "Optional additional input for stop bar lines after bearing\n"
+                          "NB_Left_StopBar_Latitude, NB_Left_StopBarLongitude, NB_Right_StopBar_Latitude, NB_Left_StopBar_Longitude\n"
+                          "Same for EB Stop Bar, SB Stop Bar, and WB Stop Bar\n"
+                          )
                 line_count += 1
-
-            print("Error processing Intersection Input CSV File. Check Formatting.")
-
             self.intersection_listDF = pd.DataFrame(self.intersection_load)
             print(
                 f"Processed {line_count} lines of CSV file for a total of {len(self.intersection_listDF.index)} intersections."

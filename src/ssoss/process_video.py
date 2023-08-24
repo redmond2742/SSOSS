@@ -104,7 +104,7 @@ class ProcessVideo:
         """
 
         intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
-        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "sightings/")
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
         #image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
@@ -382,7 +382,7 @@ class ProcessVideo:
         return font_scl
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
-        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "sightings/")
+        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         label_img_path = Path(img_path, "labeled/")
         os.makedirs(label_img_path, exist_ok=True)
 
