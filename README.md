@@ -97,7 +97,7 @@ At this point, progress bars should load while the sight images are saved to the
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has
 a helper function to perform a accurate synchronization time. The extract_frames_between method can export all the 
-video frames between two time vales. When looking at the GPX points, the approximate video time can be estimated 
+video frames between two time values. When looking at the GPX points, the approximate video time can be estimated 
 and all the frames can be extracted. This method is:
 
 ```Shell
@@ -109,6 +109,16 @@ Check the printed logs to see the saved output location. Default is:
 where ### is the frame number of the image.
 
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
+
+### Sources of Error
+
+| **Error Source**      | **Approximate Error Amount** | **Comment**                                                                                                |
+|-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------|
+| GPS                   | 9 ft +                       | Inherent with using GPS. Keep clear signal of GPS if possible                                              |
+| Stop Bar              | 20 - 80 ft                   | Depends on size of intersection. Using stop bar points can eliminate this error.                           |
+| Vehicle Motion        | 0 - 30 ft                    | Significant acceleration and deacceleration can cause error in finding the sight distance accuratly        |
+| Video View of Roadway | 0 - 25 ft                    | Calibrating the closest visible ground spot as seen on the video can eliminate this error. Typically 20ft. |
+| Video Time Sync       | 0 ft +                       | If the syncronization process is not done accuratly, this can be a huge source of error.                   |
 
 ## Documentation
 
