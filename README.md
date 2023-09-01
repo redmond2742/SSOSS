@@ -111,6 +111,8 @@ where ### is the frame number of the image.
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
 
 ### Sources of Error
+While SSOSS does provide apprimate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
+
 
 | **Error Source**      | **Approximate Error Amount** | **Comment**                                                                                                |
 |-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------|

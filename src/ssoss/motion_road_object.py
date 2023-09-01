@@ -32,6 +32,8 @@ class GPXPoint:
         self.FTPStoMPH = 0.681818
         self.MPHtoFTPS = 1 / self.FTPStoMPH
         self.MStoFTPS = self.MStoMPH * self.MPHtoFTPS
+        self.veh_gap = 0.0
+        
 
         # initial variables from GPX file
         self.id = id_num
@@ -69,6 +71,17 @@ class GPXPoint:
 
     def distance_to(self, p1) -> geopy.distance:
         return geopy.distance.distance(p1, self.p).ft
+    
+    def distance_to_line(self, p1, p2) -> float:
+        a = geopy.distance.distance(p1, p2).ft
+        b = geopy.distance.distance(p1, self.get_location()).ft
+        c = geopy.distance.distance(p2, self.get_location()).ft
+        if a is not None and b is not None and c is not None:
+            s = (a + b + c) / 2
+            dist_to_sb = 2. * math.sqrt(abs(s * (s -a) * (s - b) * (s - c))) / a
+            return dist_to_sb
+        else:
+            return 0
 
     def get_dist_between_points(self, p1, p2) -> geopy.distance:
         return geopy.distance.distance(p1, p2).ft
@@ -173,8 +186,19 @@ class GPXPoint:
                 approach_leg_string = "WB"
             return approach_leg_string
 
-    def t_to_approach_simple(self, approaching_intersection: Intersection, b_index: int) -> float:
-        d = self.distance_to(approaching_intersection.get_location()) - approaching_intersection.get_sd(b_index)
+    def t_to_approach_simple(self, approaching_intersection:Intersection, b_index: int) -> float:
+        
+        
+        approach_i_sb_pt1 = approaching_intersection.stop_bar_d[b_index][0]
+        approach_i_sb_pt2 = approaching_intersection.stop_bar_d[b_index][1]
+        
+        if (not approaching_intersection.all_sb_line_available()):
+            d = self.distance_to(approaching_intersection.get_location()) - approaching_intersection.get_sd(b_index)
+        else:
+            d = self.distance_to(approaching_intersection.get_location()) \
+                  - approaching_intersection.get_sd(b_index)              
+        
+        
         if self.get_speed() > 0:
             return d / self.get_speed()
         else:
@@ -188,14 +212,24 @@ class GPXPoint:
             v_initial = self.get_speed()
             v_final = self.get_next_gpx_point().get_speed()
             return (v_final - v_initial) / t_delta
-
         else:
             return 0.0
 
-    def t_to_approach_acc(self, approaching_intersection: Intersection, b_index: int) -> float:
+    def t_to_approach_acc(self, approaching_intersection:Intersection, b_index: int) -> float:
+        
         approach_i_sd = approaching_intersection.get_sd(b_index)
-        d_sd = self.distance_to(approaching_intersection.get_location()) - approach_i_sd
 
+        approach_i_sb_pt1 = approaching_intersection.stop_bar_d[b_index][0]
+        approach_i_sb_pt2 = approaching_intersection.stop_bar_d[b_index][1]
+        
+        d_sd_simple = self.distance_to(approaching_intersection.get_location()) - approach_i_sd
+
+        if (not approaching_intersection.all_sb_line_available()):
+            d_sd = self.distance_to(approaching_intersection.get_location()) - approach_i_sd
+        else:
+            d_sd = self.distance_to(approaching_intersection.get_location()) - approach_i_sd
+            print(f"t_to_approach, d_sd_simple:{d_sd_simple}, d_sd_hd{d_sd}")
+        
         # radical: sqrt(v^2 - 4 * acc * d_sd)
         if self.get_speed()**2 > 4 * self.acceleration() * d_sd:
             radical = math.sqrt(self.get_speed()**2 - 4 * self.acceleration() * d_sd)
@@ -253,12 +287,25 @@ class GPXPoint:
 
         approach_i_sd = approaching_intersection.get_sd(b_index)
 
-        d0 = p_prev.distance_to(approaching_intersection.get_location())
-        d1 = self.distance_to(approaching_intersection.get_location())
-        if p_next is not None:
-            d2 = p_next.distance_to(approaching_intersection.get_location())
+        approach_i_sb_pt1 = approaching_intersection.stop_bar_d[b_index][0]
+        approach_i_sb_pt2 = approaching_intersection.stop_bar_d[b_index][1]
+        
+        if not approaching_intersection.sb_line_available(b_index):
+            """using center point of intersection"""
+            d0 = p_prev.distance_to(approaching_intersection.get_location()) 
+            d1 = self.distance_to(approaching_intersection.get_location())
+            if p_next is not None:
+                d2 = p_next.distance_to(approaching_intersection.get_location())
+            else:
+                d2 = 0
         else:
-            d2 = 0
+            """using stop bar at intersection information"""
+            d0 = p_prev.distance_to(approaching_intersection.get_location_sb(b_index)) #+ approaching_intersection.center_to_sb_distance(b_index) + self.veh_gap
+            d1 = self.distance_to(approaching_intersection.get_location_sb(b_index)) #+ approaching_intersection.center_to_sb_distance(b_index) + self.veh_gap
+            if p_next is not None:
+                d2 = p_next.distance_to(approaching_intersection.get_location_sb(b_index)) #+ approaching_intersection.center_to_sb_distance(b_index) + self.veh_gap
+            else:
+                d2 = 0
 
         if d0 >= approach_i_sd:
             if d1 >= approach_i_sd:
@@ -273,11 +320,21 @@ class GPXPoint:
         h_flag = False
         p_next = self.get_next_gpx_point()
         approach_i_sd = approaching_intersection.get_sd(b_index)
-        d1 = abs(self.distance_to(approaching_intersection.get_location()))
-        if p_next is not None:
-            d2 = abs(p_next.distance_to(approaching_intersection.get_location()) - approach_i_sd)
+        approach_i_sb_pt1 = approaching_intersection.stop_bar_d[b_index][0]
+        approach_i_sb_pt2 = approaching_intersection.stop_bar_d[b_index][1]
+
+        if not approaching_intersection.sb_line_available(b_index):
+            d1 = abs(self.distance_to(approaching_intersection.get_location()))
+            if p_next is not None:
+                d2 = abs(p_next.distance_to(approaching_intersection.get_location()))
+            else:
+                d2 = 0
         else:
-            d2 = 0
+            d1 = abs(self.distance_to(approaching_intersection.get_location_sb(b_index))) #+ approaching_intersection.center_to_sb_distance(b_index) + self.veh_gap
+            if p_next is not None:
+                d2 = abs(p_next.distance_to(approaching_intersection.get_location_sb(b_index)))# + approaching_intersection.center_to_sb_distance(b_index) + self.veh_gap
+            else:
+                d2 = 0
 
         if d2 <= d1:
             h_flag = True

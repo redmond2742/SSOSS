@@ -97,6 +97,9 @@ def main():
     else:
         label_and_gif = (True, False)
 
+
+    
+
     args_static_obj_gpx_video(args.static_objects, args.gpx_file,
                               args.video_file,
                               sync_input, frames, label_and_gif)

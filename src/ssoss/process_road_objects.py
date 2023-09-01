@@ -118,12 +118,13 @@ class ProcessRoadObjects:
         :param intersection_filename: name of CSV file for loading (leave off .csv)
         :return: dataframe of intersections objects in each row
         """
-        
+
         csv_intersection_file = Path(self.in_dir_path, intersection_filename)
         self.intersection_load = {"id": [], "intersection_obj": []}
         with open(csv_intersection_file, "r") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
             line_count = 0
+            count_sb_i = 0
             for row in csv_reader:
                 columns_in_row = len(row)
                 if columns_in_row == 13:
@@ -140,8 +141,18 @@ class ProcessRoadObjects:
                             float(row[12])))
                     ))
                 elif columns_in_row == 29:
+                    nb_sb_pts = eb_sb_pts = sb_sb_pts = wb_sb_pts = False
+                    if (row[13] and row[14] and
+                        row[15] and row[16]) != "": nb_sb_pts = True
+                    if (row[17] and row[18] and
+                        row[19] and row[20]) != "": eb_sb_pts = True
+                    if (row[21] and row[22] and
+                        row[23] and row[24]) != "": sb_sb_pts = True
+                    if (row[25] and row[26] and
+                        row[27] and row[28]) != "": wb_sb_pts = True
+
                     self.intersection_load["id"].append(int(row[0]))
-                    self.intersection_load["intersection_obj"].append(Intersection(
+                    temp_i = Intersection(
                         id_num = int(row[0]),
                         # name1(N/S), name2(E/W)
                         name = tuple((str(row[1]),str(row[2]))),
@@ -164,7 +175,13 @@ class ProcessRoadObjects:
                         # WB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
                         stop_bar_wb = tuple((geopy.Point(row[25], row[26]),
                             geopy.Point(row[27], row[28])))
-                    ))
+                    )
+                    temp_i.set_sb_pts_bools((nb_sb_pts,eb_sb_pts,sb_sb_pts,wb_sb_pts))
+                    self.intersection_load["intersection_obj"].append(temp_i)
+                    
+                    if temp_i.all_sb_line_available(): count_sb_i += 1
+
+                    
                 else:
                     print("Check intersection input file formatting.\n"
                           "Input should be:\n"
@@ -176,7 +193,8 @@ class ProcessRoadObjects:
                 line_count += 1
             self.intersection_listDF = pd.DataFrame(self.intersection_load)
             print(
-                f"Processed {line_count} lines of CSV file for a total of {len(self.intersection_listDF.index)} intersections."
+                f"Processed {line_count} lines of CSV file for a total of {len(self.intersection_listDF.index)} intersections, \n \
+                and of those {count_sb_i} with stop bar information."
             )
         return self.intersection_listDF
 
@@ -345,19 +363,26 @@ class ProcessRoadObjects:
                     approach_intersection = all_intersections.iloc[sro_id-1, 1]  # shift down by 1 for list
                     approach_intersection_sight_distance = approach_intersection.get_sd(b_index)
 
+                    """
                     prev_p = p.get_prev_gpx_point()
                     next_p = p.get_next_gpx_point()
                     if prev_p is not None:
-                        d_prev = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
+                        d_prev = approach_intersection.distance_to_sb(p.get_prev_gpx_point().get_location(),b_index)
+                        #d_prev = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
                     if next_p is not None:
-                        d_next = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
+                        d_next = approach_intersection.distance_to_sb(p.get_prev_gpx_point().get_location(),b_index)
+                        #d_next = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
+                    """
 
-                    if p.h_prev_and_current_before_next(approach_intersection, b_index) and \
-                       p.h_next_less_than_current(approach_intersection, b_index):
+                    prev_current_b4_next = p.h_prev_and_current_before_next(approach_intersection, b_index)
+                    next_less_than_current = p.h_next_less_than_current(approach_intersection, b_index)
+
+                    if (prev_current_b4_next and next_less_than_current):
 
                         t_acc = p.t_to_approach_acc(approach_intersection, b_index)
                         print(
-                            f"Signal #{sro_id}.{b_index} at {approach_intersection_sight_distance} ft")
+                            f"Signal #{sro_id}.{b_index} at {approach_intersection_sight_distance} ft acc shift by {t_acc}"
+                        )
 
                         t_shift_acc = p.get_timestamp() + t_acc
                         intersection_sd.append(self.intersection_frame_description(sro_id, b_index, d_current, t_shift_acc))
@@ -378,6 +403,7 @@ class ProcessRoadObjects:
             min = int(sec/60)
             sec_remain = round(sec - min * 60, 2)
             return f'{min}:{sec_remain} (MM:SS.ss)'
+        #TODO: fix hr in minutes
         elif sec >= 3600:
             hr = int(sec/3600)
             min = int(sec/60)

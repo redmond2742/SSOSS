@@ -3,6 +3,7 @@
 
 import math
 import geopy, geopy.distance
+import numpy as np
 
 
 class StaticRoadObject:
@@ -86,7 +87,7 @@ class Intersection(StaticRoadObject):
 
         """
 
-        self.stop_bar = None  # why is this here?
+        self.stop_bar_bools = tuple((False,False,False,False))  
         self.spd = spd
         self.ctr_pnt = ctr_pnt
         self.bearing = bearing
@@ -187,18 +188,44 @@ class Intersection(StaticRoadObject):
         else:
             return round(float(self.sd[direction]))
 
-    def get_sb_distance(self, direction) -> float:
-        """ NOT SURE WHAT THIS DOES
-        get stop bar distance of intersection object based on compass direction/heading
-        :param direction:
-        :return: float od distance in feet from stop bar to event distance
-        """
-        return float(self.stop_bar_d[direction])
-
     def get_info(self) -> str:
         """ get id # and name of intersection object
         """
         return str(f'{self.get_id_num()}-{self.get_name()}')
+    
+    def set_sb_pts_bools(self, t):
+        """ set stop bar bools with a tuple
+        """
+        self.stop_bar_bools = t
+
+    def sb_line_available(self, bearing_index) -> bool:
+        """ check if specific approach stopbar line is available to use
+        """
+        return self.stop_bar_bools[bearing_index]
+    
+    def all_sb_line_available(self) -> bool:
+        """ check if all stop bar variables are available
+        """
+        nb = self.stop_bar_bools[0]
+        eb = self.stop_bar_bools[1]
+        sb = self.stop_bar_bools[2]
+        wb = self.stop_bar_bools[3]
+        return (nb and eb and sb and wb)
+    
+    def center_to_sb_distance(self, bearing_index):
+        """not used"""
+        min_distance = min(
+            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][0]).ft,
+            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][1]).ft
+        )
+        return min_distance
+    
+    def get_location_sb(self, bearing_index) -> geopy.Point:
+        shortest_index = np.argmin(
+            [geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][0]).ft,
+            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][1]).ft]
+        )
+        return self.stop_bar_d[bearing_index][shortest_index]
 
     def distance_to_sb(self, dynamic_pt: geopy.Point,
                        direction: int) -> float:
@@ -223,10 +250,13 @@ class Intersection(StaticRoadObject):
                 dist_to_ctr = geopy.distance.distance(self.pt, dynamic_pt).ft
                 return dist_to_ctr
             else:
-                # distance from dynamic point to inside lane stop bar point
-                b = geopy.distance.distance(self.stop_bar_d[direction][0], dynamic_pt).ft
-                # distance from dynamic point to outside lane stop bar point
-                c = geopy.distance.distance(self.stop_bar_d[direction][1], dynamic_pt).ft
+                if dynamic_pt is None:
+                    pass
+                else:
+                    # distance from dynamic point to inside lane stop bar point
+                    b = geopy.distance.distance(self.stop_bar_d[direction][0], dynamic_pt).ft
+                    # distance from dynamic point to outside lane stop bar point
+                    c = geopy.distance.distance(self.stop_bar_d[direction][1], dynamic_pt).ft
 
             # calculate perpendicular distance between stop bar and dynamic object
             if a is not None and b is not None and c is not None:
