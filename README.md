@@ -1,6 +1,7 @@
 # Safe Sightings of Signs and Signals (SSOSS)
 
 [SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
+[Using SSOSS How To Video](https://youtu.be/R7qm3d8Ego8)
 
 SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway network. This is a 
 streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a synchronized recorded video file.
@@ -111,7 +112,7 @@ where ### is the frame number of the image.
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
 
 ### Sources of Error
-While SSOSS does provide apprimate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
+While SSOSS does provide approximate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
 
 
 | **Error Source**      | **Approximate Error Amount** | **Comment**                                                                                                |
