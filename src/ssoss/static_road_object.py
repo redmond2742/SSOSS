@@ -14,7 +14,7 @@ class StaticRoadObject:
 
         :param id_num: Identification number (int)
         :param name: name of street object is located on
-        :param obj_type: type of static object, ie. sign, intersection, etc.
+        :param obj_type: type of static object, ie. sign, intersection, generic_so, etc.
         :param ctr_pt: Geopy Point object of lat, lon, altitude
         :param spd_sd: speed [key] and sight distance[value] of object to be viewed (distance in ft)
         """
@@ -41,6 +41,71 @@ class StaticRoadObject:
     def get_sd(self):
         return self.spd_sd.values()[0]  # first/only distance (feet) to have clear view of static object.
 
+class GenericStaticObject():
+    def __init__(self, id_num: int, street_name: str, pt: geopy.Point, bearing, description:str, distance_ft: float ):
+        """ Class for any type of static object. Point and Visible Distance are primary inputs
+         
+        """
+
+        self.id_num = id_num
+        self.street_name = street_name
+        self.pt = geopy.Point(pt.latitude, pt.longitude)  # removes elevation for dist calcs
+        self.description = description
+        self.distance_ft = distance_ft
+        
+        compass = {"NB":0,
+                   "EB":90,
+                   "SB":180,
+                   "WB":270
+                   }
+
+        if type(bearing) == str:
+            self.bearing = compass[bearing]
+        else:
+            self.bearing = bearing
+
+
+    def get_id_num(self) -> int:
+        return int(self.id_num)
+
+    def get_name(self) -> str:
+        return self.street_name
+
+    def get_location(self) -> geopy.Point:
+        return self.pt
+    
+    def get_description(self) -> str:
+        return self.description
+    
+    def get_sd(self) -> float:
+        return self.distance_ft
+    
+    def get_bearing(self) -> float:
+        return self.bearing
+    
+    def get_bearing_str(self) -> str:
+        quadrant = (self.bearing / 45.0)
+        if 0 <= quadrant <= 1 or quadrant > 7:
+            return "NB"
+        elif 2 <= quadrant <= 3:
+            return "EB"
+        elif 4 <= quadrant <= 5:
+            return "SB"
+        elif 6 <= quadrant <= 7:
+            return "WB"
+        else:
+            return "ERROR"
+    
+    def print_detail_info(self) -> str:
+        return str(f'{self.get_id_num()}.{self.get_name()}-{self.get_bearing_str()}-{self.get_description()}-{self.get_sd()}')   
+
+    def print_detail_info_with_ts(self,ts) -> str:
+        return str(f'{self.get_id_num()}.{self.get_name()}-{self.get_bearing_str()}-{self.get_description()}-{self.get_sd()}-{ts}')   
+        
+    def print_info(self) -> str:
+        """ print string id # and name of intersection object
+        """
+        return str(f'{self.get_id_num()}-{self.get_name()}')
 
 # class for speed limit signs
 class SpeedLimitSign(StaticRoadObject):

@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # coding: utf-8
 
-import csv
+import csv, math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,24 +16,30 @@ import lxml
 from lxml import etree
 from tqdm import tqdm
 
-from ssoss.static_road_object import Intersection
+from ssoss.static_road_object import Intersection, GenericStaticObject
 from ssoss.motion_road_object import GPXPoint
 
 
 class ProcessRoadObjects:
 
     def __init__(self,
-                 gpx_filestring: str,
-                 signals_filestring: str,
+                 gpx_filestring: str = "",
+                 #signals_filestring: str = "",
+                 generic_static_object_filestring: str = ""
                  ):
         """ Class to process Road Object files. Using January 1st 1970 as time epoc
 
-        :signals_filepath: as string, full directory and filename of sign or signal CSV file
         :gpx_filepath: as string, full directory and filename of gpx file
+        :signals_filepath: as string, full directory and filename of sign or signal CSV file
+        generic_static_object_filestring: as string, full directory and filename of generic SO CSV file
         """
 
-        self.intersection_listDF = None
         self.intersection_load = None
+        self.intersection_listDF = None
+
+        self.generic_so_load = None  #id, generic_SO object list
+        self.generic_so_listDF = None # data frame of generic_SO object list
+
         self.date_format = "%m-%d-%Y--%H-%M-%S.%f-%Z"
         self.pretty_datetime_format = "%y-%m-%d %H:%M:%S"
         self.in_gpx_dir_path = Path(gpx_filestring).parent
@@ -42,8 +48,10 @@ class ProcessRoadObjects:
         self.out_dir_path.parent.mkdir(exist_ok=True, parents=True)
 
         # init variables
-        if signals_filestring:
-            self.intersection_filename = Path(signals_filestring)
+        #if signals_filestring:
+        #    self.intersection_filename = Path(signals_filestring)
+        if generic_static_object_filestring:
+            self.generic_so_filename = Path(generic_static_object_filestring)
         self.gpx_filename = Path(gpx_filestring).stem
         self.pickle_file = ''
         self.gpx_file = ''
@@ -56,13 +64,31 @@ class ProcessRoadObjects:
         self.sum_total_points = 0.0
 
         self.intersection_approaches = 0
+        self.generic_so_approaches = 0
 
         # scafold directory structure if not present
         gpx_video_dir = self.in_gpx_dir_path
         p = Path(str(gpx_video_dir))
 
+        self.static_object_type = ""
+
+        """
         if signals_filestring:
             all_intersections_df = self.load_intersection_csv(self.intersection_filename)
+        """
+        if generic_static_object_filestring:
+            # if filestring file has 7 rows, load_generic_so_csv, else load_intersection_csv
+            with open(self.generic_so_filename, 'r') as f:
+                reader = csv.reader(f)
+                so_file_columns = len(next(reader))
+            if so_file_columns == 7:
+                self.static_object_type = "generic static object"
+                all_generic_so_df = self.load_generic_so_csv(self.generic_so_filename)
+            elif so_file_columns == 13 or so_file_columns == 29:
+                self.static_object_type = "intersection"
+                all_intersections_df = self.load_intersection_csv(self.generic_so_filename)
+            else:
+                raise ValueError("generic static object .csv file must have 7, 13 or 29 columns. Check documentation.")
         if self.gpx_filename:
             gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=False)
 
@@ -87,6 +113,35 @@ class ProcessRoadObjects:
 
     def get_intersection_object_by_id(self, intersection_id):
         return self.intersection_listDF.iloc[intersection_id-1, 1]
+    
+    def get_generic_so_object_by_id(self, id):
+        return self.generic_so_listDF.iloc[id-2, 1]
+    
+    def get_static_object_type(self):
+        return self.static_object_type
+
+    def generic_so_description(self, sro_id, distance, ts, desc_type="filename"):
+        """
+        create descriptive labels for image filenames and labels at bottom of image
+        creates descriptive labels for generic static objects
+        
+        """
+        generic_so_id = sro_id
+        generic_so_obj = self.get_generic_so_object_by_id(sro_id)
+        generic_so_name = generic_so_obj.get_name()
+        generic_so_sd = int(generic_so_obj.get_sd())
+        generic_so_dist = distance
+        ts_utc = round(ts, 3)
+        dt_temp = datetime.fromtimestamp(ts, tz=None)
+        date_time = dt_temp.strftime("%a, %b %e %Y at %I:%M %p")  # Note: using %-[char] gives error for windowsOS
+
+        if desc_type == "filename":
+            filename_desc = f'{generic_so_id}.{generic_so_sd}-{generic_so_name}-{generic_so_obj.get_description()}-{ts_utc}'
+            return filename_desc
+        elif desc_type == "label":
+            label = f'{generic_so_obj.get_bearing_str()} {generic_so_name} (#{sro_id}) {generic_so_obj.get_description()} at ~{generic_so_sd} ft on {date_time}'
+            return label
+
 
     def intersection_frame_description(self, sro_id, b_index, distance, ts, desc_type="filename"):
         i_obj = self.get_intersection_object_by_id(sro_id)
@@ -103,7 +158,7 @@ class ProcessRoadObjects:
         dt_temp = datetime.fromtimestamp(ts, tz=None)
         date_time = dt_temp.strftime("%a, %b %e %Y at %I:%M %p")  # %-[char] gives error for windowsOS
 
-        #  don't use "/" when building filename string
+        # Note-to-self: don't use "/" when building filename string
         if desc_type == "filename":
             filename_desc = f'{i_id}.{i_bearing}-{i_name}-{i_sd}-{ts_utc}'
             return filename_desc
@@ -111,11 +166,49 @@ class ProcessRoadObjects:
             label = f'{i_compass_bearing} approach of {i_name_one} and {i_name_two} (#{sro_id}) at ~{i_sd} ft on {date_time}'
             return label
 
+    def load_generic_so_csv(self, generic_so_filename: str) -> pd.DataFrame:
+        """ Loads CSV file into Generic Static Object Class DataFrame
+        :param generic_so_filename: name of CSV file for loading (leave off .csv)
+            Format: #,Street Name,latitude,longitude,direction,object type, distance
+        :return: dataframe of generic static objects in each row
+        """
+
+        csv_generic_so_file = Path(self.in_dir_path, generic_so_filename)
+        self.generic_so_load = {"id": [], "generic_so_obj": []}
+
+        with open(csv_generic_so_file, "r") as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            next(csv_reader, None)  # skip the header
+            line_count = 0
+            for row in csv_reader:
+                try:
+                    self.generic_so_load["id"].append(int(row[0]))
+                    self.generic_so_load["generic_so_obj"].append(GenericStaticObject(
+                        id_num = int(row[0]),
+                        street_name = str(row[1]),
+                        pt = geopy.Point(float(row[2]),float(row[3])),
+                        bearing = row[4],
+                        description = str(row[5]),
+                        distance_ft = float(row[6])            
+                    ))
+                except:
+                    print("Check intersection input file formatting.\n"
+                          "Input should be:\n"
+                          "#,Street Name,Latitude, Longitude, Bearing (NB,EB,SB,WB), Description, Distance (in feet)\n"
+                          )
+                line_count += 1
+            self.generic_so_listDF = pd.DataFrame(self.generic_so_load)
+            print(
+                f"Processed {line_count} lines of CSV file")
+            print(
+                f"for a total of {len(self.generic_so_listDF.index)} Generic Static Object(s)")
+            
 
     def load_intersection_csv(self, intersection_filename: str) -> pd.DataFrame:
         """ Loads CSV file into Intersection Class DataFrame
 
         :param intersection_filename: name of CSV file for loading (leave off .csv)
+            CSV Format: #,name1(N/S),name2(E/W),latitude,longitude,spd_N,spd_E,spd_S,spd_W,bearing_N,bearing_E,bearing_S,bearing_W,
         :return: dataframe of intersections objects in each row
         """
 
@@ -123,6 +216,7 @@ class ProcessRoadObjects:
         self.intersection_load = {"id": [], "intersection_obj": []}
         with open(csv_intersection_file, "r") as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
+            next(csv_reader, None)  # skip the header
             line_count = 0
             count_sb_i = 0
             for row in csv_reader:
@@ -163,6 +257,7 @@ class ProcessRoadObjects:
                         # bearing_N, bearing_E, bearing_S, bearing_W
                         bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
                             float(row[12]))),
+                        # Additional info for stop bar to improve accuracy:
                         # NB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
                         stop_bar_nb = tuple((geopy.Point(row[13], row[14]),
                             geopy.Point(row[15], row[16]))),
@@ -212,13 +307,11 @@ class ProcessRoadObjects:
     def load_gpx_to_obj_df(self, gpx_filename: str, gpx_ver = "1.0", use_pickle=True) -> pd.DataFrame:
         """ Loads GPX file into point objects and returns a dataframe of all the points
         """
-
         self.gpx_filename = gpx_filename
         self.gpx_ver = gpx_ver
         self.gpx_file = self.in_dir_path / self.in_gpx_dir_path / (gpx_filename + ".gpx")
         self.pickle_file = self.out_dir_path / (gpx_filename + ".pkl")
         self.csv_file = self.out_dir_path / (gpx_filename + ".csv")
-
         gpx_load = {"gpx_pt": []}
 
         # initialize starting variables if GPX v1.1 needs speed calcs
@@ -292,11 +385,13 @@ class ProcessRoadObjects:
             f"Processing {pt_count} points of GPX file."
         )
         if self.intersection_listDF is not None:
-            self.update_gpx_points()
+            self.update_gpx_points(so_type = "intersection")
+        if self.generic_so_listDF is not None:
+            self.update_gpx_points(so_type = "generic_so")
         self.gpx_summary()
         return self.gpx_listDF
 
-    def update_gpx_points(self):
+    def update_gpx_points(self, so_type):
         """
         updates gpx_prev_point and gpx_next_point as objects after the initial points
         are loaded
@@ -327,14 +422,15 @@ class ProcessRoadObjects:
             cuml_d += current_gpx_pt.distance_to(current_gpx_pt.get_prev_gpx_point().get_location())
             current_gpx_pt.set_cumulative_distance(cuml_d)
 
-
         # edge cases again
         gpx_df.iloc[0, 0].set_next_gpx_point(gpx_df.iloc[1, 0])
 
-
-        # display progress bar for calculating time-consuming backflow function
+        # display progress bar for calculating time-consuming/unoptimized backflow function
         for i in tqdm(range(len(gpx_df.index))):
-            gpx_df.iloc[i, 0].backflow(self.intersection_listDF)
+            if so_type == "intersection":
+                gpx_df.iloc[i, 0].backflow(self.intersection_listDF, "intersection")
+            elif so_type == "generic_so":
+                gpx_df.iloc[i, 0].backflow(self.generic_so_listDF, "generic_so")
 
     def get_start_timestamp(self):
         return self.gpx_listDF.iloc[0, 0].get_timestamp()
@@ -342,11 +438,96 @@ class ProcessRoadObjects:
     def get_end_timestamp(self):
         last_index = self.gpx_listDF.last_valid_index()
         return self.gpx_listDF.iloc[last_index, 0].get_timestamp()
+    
+    def generic_so_checks(self):
+        """
+        perform generic distance check on static road object
+        """
+        gpx_df = self.gpx_listDF
+        all_generic_so = self.generic_so_listDF
+        generic_so_desc = []
+        generic_so_ts = []
+        generic_so_error = []
+        bearing_buffer_angle = 50
+        time_buffer = 3
+
+        for point in range(len(gpx_df.index)):
+            generic_so_info = gpx_df.iloc[point, 0].get_generic_so_approach_list()
+          
+            if generic_so_info:
+                p = gpx_df.iloc[point, 0]
+                generic_so_id, dist, approaching_bool = zip(*generic_so_info)
+                for item in range(len(list(generic_so_id))):
+                    sro_id = int(list(generic_so_id)[item])
+                    d_current = list(dist)[item]
+
+                    approach_generic_so = all_generic_so.iloc[sro_id-1, 1]  # shift by 1 for generic_so dataframe (starting at 0, not 1)
+                    approach_generic_so_sight_distance = approach_generic_so.get_sd()
+      
+                    if p.calc_bearing_diff(approach_generic_so.get_bearing()) < bearing_buffer_angle:
+                        print(
+                            f"Generic Object #{sro_id} at {approach_generic_so_sight_distance} ft at {p.get_timestamp()}"
+                        )
+                        prev_current_b4_next = p.generic_so_prev_and_current_before_next(approach_generic_so)
+                        next_less_than_current = p.generic_so_next_less_than_current(approach_generic_so)  
+                        neg_dist = p.distance_to(approach_generic_so.get_location()) - approach_generic_so_sight_distance
+                        #if prev_current_b4_next and next_less_than_current:
+                        filtered_sightings = p.generic_so_single_filter(approach_generic_so)
+                
+                        if filtered_sightings[0] and (neg_dist < 0):
+                            t_acc = p.t_to_generic_so_acc(approach_generic_so)
+                            print(
+                                f"Generic Object #{sro_id} at {approach_generic_so_sight_distance} ft acc shift by {t_acc} with error {filtered_sightings[1]} ft"
+                            )
+                
+                            t_shift_acc = p.get_timestamp() + t_acc
+                            if approach_generic_so.print_detail_info() in generic_so_desc:
+                                index_item = generic_so_desc.index(approach_generic_so.print_detail_info())
+                                if t_shift_acc-time_buffer < generic_so_ts[index_item] < t_shift_acc + time_buffer:
+                                    if filtered_sightings[1] < generic_so_error[index_item]:
+                                        #todo: make remove function
+                                        del generic_so_desc[index_item]
+                                        del generic_so_ts[index_item]
+                                        del generic_so_error[index_item]
+                                        #todo: make append function
+                                        generic_so_desc.append(approach_generic_so.print_detail_info())
+                                        generic_so_ts.append(t_shift_acc)
+                                        generic_so_error.append(filtered_sightings[1])
+                            else:
+                                generic_so_desc.append(approach_generic_so.print_detail_info())
+                                #generic_so_sights.append(self.generic_so_description(sro_id, approach_generic_so_sight_distance, t_shift_acc))
+                                generic_so_ts.append(t_shift_acc)
+                                generic_so_error.append(filtered_sightings[1])
+        
+     
+        updated_desc = self.include_timestamp_to_description(generic_so_desc, generic_so_ts)
+        z = zip(updated_desc, generic_so_ts)  # create tuples with generic Static Object descriptions,timestamps and errors
+        id_ts_error = list(z)  # convert zip to list
+        time_sort = sorted(id_ts_error, key=lambda x: x[1])  # sort the list by timestamps
+        #id_sort = sorted(id_ts_error, key=lambda x: x[0])  # sort the list by id
+        #error_sort = sorted(id_ts_error, key=lambda x: x[2])  # sort the list by errors
+       
+        self.generic_so_approaches = len(time_sort)
+        return time_sort
+    
+
+    @staticmethod
+    def include_timestamp_to_description(desc, ts):
+        """ 
+        add timestamp to description in one string
+        """
+        for i in range(len(desc)):
+            desc[i] = desc[i] + "-" + str(round(ts[i],3))
+        return desc
 
     def intersection_checks(self):
+        """
+        perform intersection sight distance checks.
+        find timestamp of intersection approach sight distance locations
+        check each GPX point
+        """
         gpx_df = self.gpx_listDF
         all_intersections = self.intersection_listDF
-
         intersection_sd = []  # store intersection id & index in list
         intersection_ts = []  # store timestamps in list
 
@@ -360,25 +541,15 @@ class ProcessRoadObjects:
                     b_index = int(list(bearing_index)[item])
                     d_current = list(dist)[item]
 
-                    approach_intersection = all_intersections.iloc[sro_id-1, 1]  # shift down by 1 for list
+                    approach_intersection = all_intersections.iloc[sro_id-1, 1]  
                     approach_intersection_sight_distance = approach_intersection.get_sd(b_index)
-
-                    """
-                    prev_p = p.get_prev_gpx_point()
-                    next_p = p.get_next_gpx_point()
-                    if prev_p is not None:
-                        d_prev = approach_intersection.distance_to_sb(p.get_prev_gpx_point().get_location(),b_index)
-                        #d_prev = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
-                    if next_p is not None:
-                        d_next = approach_intersection.distance_to_sb(p.get_prev_gpx_point().get_location(),b_index)
-                        #d_next = p.get_prev_gpx_point().distance_to(approach_intersection.get_location())
-                    """
 
                     prev_current_b4_next = p.h_prev_and_current_before_next(approach_intersection, b_index)
                     next_less_than_current = p.h_next_less_than_current(approach_intersection, b_index)
-
+                    simple_int_approach = p.simple_intersection_approach(approach_intersection, b_index)
+       
                     if (prev_current_b4_next and next_less_than_current):
-
+                    #if simple_int_approach:
                         t_acc = p.t_to_approach_acc(approach_intersection, b_index)
                         print(
                             f"Signal #{sro_id}.{b_index} at {approach_intersection_sight_distance} ft acc shift by {t_acc}"
@@ -403,10 +574,10 @@ class ProcessRoadObjects:
             min = int(sec/60)
             sec_remain = round(sec - min * 60, 2)
             return f'{min}:{sec_remain} (MM:SS.ss)'
-        #TODO: fix hr in minutes
         elif sec >= 3600:
             hr = int(sec/3600)
-            min = int(sec/60)
+            min_remain = round(sec - hr * 3600, 2)
+            min = int(min_remain/60)
             sec_remain = round(sec - min * 60, 2)
             return f'{hr}:{min}:{sec_remain} (HH:MM:SS.ss)'
 
@@ -481,7 +652,6 @@ class ProcessRoadObjects:
             if point_list.loc[i][0].get_timestamp() <= ts <= point_list.loc[i + 1][0].get_timestamp():
                 speed = self.avg_speed(point_list.loc[i][0].get_speed(), point_list.loc[i+1][0].get_speed())
                 break
-
         return speed
 
 

@@ -84,7 +84,7 @@ class ProcessVideo:
 
         for sd_item in range(0, len(i_desc_timestamps)):
             time_of_picture = time_of_sd[sd_item] - self.get_start_timestamp()
-            if time_of_picture > 0:
+            if time_of_picture > 0 and time_of_picture <= self.get_duration():
                 frame_of_video = time_of_picture * self.fps
 
                 #  build up lists if not duplicate frame
@@ -94,6 +94,58 @@ class ProcessVideo:
                 prev_frame = frame_of_video
 
         return intersection_desc, frames
+    
+    def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
+        """
+        extract generic sighting images from video based on description and timestamp zip
+
+        desc_timestamps: sorted list of tuples (filename description, timestamp of sight distance)
+        project: instance of ProcessRoadObjects() class
+        """
+
+        generic_so_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
+        image_path.mkdir(exist_ok=True, parents=True)
+
+        #image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
+        #os.makedirs(image_path, exist_ok=True)
+
+        capture = cv2.VideoCapture(str(self.video_filepath))
+        frame_count = self.get_frame_count()
+
+        i = 0  # index for all frames to extract
+        j = 0  # index for frames list to extract as image
+        k = 0  # intersection string description counter
+
+        while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
+            for current_frame in tqdm(range(0, extract_frames[-1]),
+                          desc="Frame Search",
+                          unit=" Frames"):
+                ret, frame = capture.read()
+                if ret is False:
+                    print("ERROR: ret is FALSE on OpenCV image")
+                    break
+                if i == extract_frames[j] and j <= len(extract_frames)-1:
+                    frame_name = str(generic_so_desc[j]) + '.jpg'
+                    frame_filepath = image_path / frame_name
+                    cv2.imwrite(str(frame_filepath), frame)
+                    print(
+                        f'PICTURE CAPTURED AT {extract_frames[j]}: {generic_so_desc[j]}, Saved {j + 1} picture(s) of {len(extract_frames)}')
+                    j += 1
+                    k += 1
+                if j == len(extract_frames):
+                    print("done processing images")
+                    capture.release()
+                    break
+                i += 1
+            if i > extract_frames[-1]:
+                break
+        capture.release()
+
+        if label_img:
+            self.generic_so_img_overlay_info_box(self.video_filename, project)
+        if gen_gif:
+            self.generate_gif(desc_timestamps, project)
 
     def extract_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
@@ -116,6 +168,8 @@ class ProcessVideo:
         i = 0  # index for all frames to extract
         j = 0  # index for frames list to extract as image
         k = 0  # intersection string description counter
+
+        # todo: check if frame/timestamp is in video before trying to extract
 
         while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
 
@@ -147,6 +201,12 @@ class ProcessVideo:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
+        """
+        if bbox:
+        self.img_overlay_bbox(description_list,project)
+    
+        """    
+     
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
     def extract_frames_between(self, start_sec, end_sec):
@@ -293,7 +353,6 @@ class ProcessVideo:
             #  TODO: overwite existing gif option
 
 
-
     @staticmethod
     def hr_min_sec(sec):
         if sec < 60:
@@ -366,20 +425,130 @@ class ProcessVideo:
 
 
     @staticmethod
-    def find_font_scale(label, max_width):
-        font_scl = 0.1
+    def find_font_scale(label, max_width = 0, max_height = 0):
+        font_scl = 0.2
         textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, font_scl, 1)[0]
-        if textsize_x < max_width:
-            #  scale up scale in for loop
-            for scale_increment in np.arange(0, 10, 0.1):
-                font_scl = scale_increment
-                textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, font_scl, 1)[0]
-                if textsize_x < max_width:
-                    continue
+        w_font_scl = h_font_scl = font_scl
+        if max_width > 0:
+            if textsize_x < max_width:
+                #  scale up scale in for loop
+                for scale_increment in np.arange(0, 10, 0.1):
+                    w_font_scl = scale_increment
+                    textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, w_font_scl, 1)[0]
+                    if textsize_x < max_width:
+                        continue
+                    else:
+                        w_font_scl = scale_increment - 0.5
+                        break
+        if max_height > 0:
+            if textsize_y < max_height:
+                #  scale up scale in for loop
+                for scale_increment in np.arange(0, 10, 0.1):
+                    h_font_scl = scale_increment
+                    textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, h_font_scl, 1)[0]
+                    if textsize_y < max_height:
+                        continue
+                    else:
+                        h_font_scl = scale_increment - 0.5
+                        break
+        if max_width > 0  and max_height > 0:
+            return min(w_font_scl, h_font_scl)
+        else:
+            return max(w_font_scl, h_font_scl)
+    
+
+
+    @staticmethod
+    def find_x_start_new_label(x_size, w, label):
+        start_x = 0
+        trunc_label = label[:]
+        if x_size <= w:
+            start_x = int((w - x_size) / 2.0)
+        else:
+            start_x = 0
+            trunc_label = label[0:w]
+        return start_x, trunc_label
+            
+  
+    
+    def generic_so_img_overlay_info_box(self, vid_filename_dir, ro_info):
+        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
+        label_img_path = Path(img_path, "labeled/")
+        os.makedirs(label_img_path, exist_ok=True)
+
+        alpha = 1  # Transparency factor.
+        text_font = cv2.FONT_HERSHEY_PLAIN
+        font_thickness = 1
+        ssoss_advertisment = True #  advertise ssoss on bottom of image when labeling image with description
+
+        img_dir_string = str(img_path)
+        label_img_dir_string = str(label_img_path)
+        pattern_criteria = ['*.jpg','[!.]*']
+
+        #  filter for images where * is wildcard and don't include hidden (.*) files
+        pathlist = [f for f in Path(img_dir_string).rglob('*.jpg') if not str(f).startswith(".")]
+        for file in pathlist:
+            if not str(file.stem).startswith("."):
+                filename = str(Path(file).name)
+                img_path = img_dir_string + "/" + filename
+                img = cv2.imread(img_path)
+                overlay = img.copy()
+
+                label_img_name = str(Path(label_img_path, filename))
+                
+                #get img dimensions
+                img_height, img_width, channels = img.shape
+                rect_h = int(img_height * 0.05)
+                rect_w = img_width
+                rect_y = img_height - rect_h
+                ssoss_ad_height = int(img_height * 0.02)
+
+
+                #build label
+                sro_id = int(filename.split(".")[0])
+                distance = 0
+                ts = float(filename.split("-")[-1].replace(".jpg", ""))
+                label = ro_info.generic_so_description(sro_id, distance, ts, desc_type="label")
+                font_scale = self.find_font_scale(label, max_width = rect_w)
+                textsize_x, textsize_y = cv2.getTextSize(label, text_font,  font_scale, font_thickness)[0]
+                text_y = int((img_height - rect_h/2.0)+textsize_y/2.0)
+                text_x, label = self.find_x_start_new_label(textsize_x,rect_w,label)
+                
+                #white box and text label
+                # (B,G,R) for color
+
+                # ssoss advertisiment label, default will print on bottom
+                if ssoss_advertisment:
+
+                    ssoss_ad_label = "Created using Free and Open Source Software: Safe Sightings of Signs and Signals (SSOSS): Github.com/redmond2742/ssoss"
+                    ssoss_ad_font_scale = self.find_font_scale(ssoss_ad_label, max_height = ssoss_ad_height, max_width = img_width)
+                    ssoss_ad_textsize_x, ssoss_ad_textsize_y = cv2.getTextSize(ssoss_ad_label, text_font,  ssoss_ad_font_scale, font_thickness)[0]
+                    ssoss_text_y = img_height
+                    ssoss_text_x, ssoss_label = self.find_x_start_new_label(ssoss_ad_textsize_x, rect_w ,ssoss_ad_label)
+
+                    ssoss_ad_y = img_height - ssoss_ad_height
+                    label_and_ssoss_ad_y = ssoss_ad_y - rect_h
+                    label_and_ssoss_ad_text_y = ssoss_ad_y - int(textsize_y/2.0)
+
+                    #ssoss ad box
+                    cv2.rectangle(overlay,pt1=(0, img_height), pt2=(rect_w, ssoss_ad_y), color=(0, 0, 0), thickness=-1)
+                    ssoss_and_label = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+                    #image label box
+                    cv2.rectangle(overlay, pt1=(0, ssoss_ad_y), pt2=(rect_w, label_and_ssoss_ad_y), color=(255, 255, 255), thickness=-1)
+                    ssoss_and_label = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+                    # text for ssoss ad and label
+                    ssoss_and_label = cv2.putText(ssoss_and_label, label, (text_x, label_and_ssoss_ad_text_y), text_font, font_scale, (0, 0, 0), 2)
+                    ssoss_and_label = cv2.putText(ssoss_and_label, ssoss_label, (ssoss_text_x, ssoss_text_y), text_font, ssoss_ad_font_scale, (255, 255, 255), 2)
+                    # save image
+                    cv2.imwrite(label_img_name, ssoss_and_label)
+
                 else:
-                    font_scl = scale_increment - 0.1
-                    break
-        return font_scl
+                    # no ssoss ad box, just image label
+                    cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
+                    img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+                    cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
+                    cv2.imwrite(label_img_name, img_new)
+
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
         img_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
@@ -409,7 +578,7 @@ class ProcessVideo:
                 img_height, img_width, channels = img.shape
                 rect_h = int(img_height * 0.05)
                 rect_w = img_width
-                rect_y = img_height-rect_h
+                rect_y = img_height - rect_h
 
                 # build label
                 sro_id = int(filename.split(".")[0])
@@ -427,12 +596,14 @@ class ProcessVideo:
                     text_x = 0
                     label = label[0:rect_w]
 
+                cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
+                img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+                cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
+                cv2.imwrite(label_img_name, img_new)
+
                 # (x,y))
                 """
                 0,0                                                              img_width,0
-                
-                
-                
                 0, img_height - img_height*5%             img_width, img_height - img_height*5%
                 
                 0,img_height                                             img_width, img_height
