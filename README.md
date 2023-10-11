@@ -39,7 +39,7 @@ To use the SSOSS program,
 1. Setup the necessary input files in A and B. 
 2. Follow the data processing commands in Part C. Jupyter Notebook available as example
 
-### A. Input Files: Intersection CSV File
+### A.1 Input File: Intersection CSV File
 Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing. Both Intersection CSV files and Sign CSV template files are available in "CSV templates" folder in this github repository and includes an example intersection/sign for easy duplication. Header descriptions stays in CSV file.
 
 The intersection CSV file has the following format (as a minimum):
@@ -55,7 +55,7 @@ For more accurate sight distance images, stop bar locations can be appended to e
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 37.79055490933646 | -122.41231165549507 | 37.79056709721846 | -122.41222448370476 | 37.79071792444257 | -122.41241972749047 | 37.790609293471164 | -122.41239692871453 | 37.79078277043246 | -122.41224998121827| 37.79076899286676 | -122.41237537448755 | 37.79064499466002 | -122.41213464623262 | 37.790755745205026 | -122.41215543335213 |
 
-### A. Input Files: Sign CSV File
+### A.2 Input File: Sign CSV File
 Data related to signs (or simple static road objects) use the following format as a CSV input file.
 
 | ID# | Street Name | Latitude| Longitude | Direction | Sign Description | Distance (ft)
@@ -112,14 +112,17 @@ While SSOSS does provide approximate sight distance images, their are various so
 
 ## Documentation
 
-### Helper Function: GIF Creator
-Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus
-at an extracted frame, or just more context before and after a sight distance is needed.
+### Optional Tool: GIF Creator
+Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus or an few frames are obstructed.
 
-```python
-        video.extract_sightings(sightings, signal_project, gen_gif=True)
-```
+Include the -- gif flag in the command line to create. Note: this requires additional processing time for large video files.
+
 Saves .gif file in ./out/[video filename]/gif/
+
+### Helper Function: Label Image
+Add a label to the bottom of the image by including the --label flag in the command line.
+
+Saves images in ./out/[video filename]/signal_sightings/labeled
 
 ### Heuristic
 
