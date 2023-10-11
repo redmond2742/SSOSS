@@ -65,6 +65,15 @@ class ProcessVideo:
             return timedelta(seconds=self.duration)
 
     def sync(self, frame: int, ts):
+        """
+        finds start time of video based on frame and timestamp
+            appends frame # and timestamp to sync.txt with video filename for reference
+        """
+        sync_txt_folder = Path(self.video_dir, "out")
+        sync_file = str(sync_txt_folder) +"/"+ "sync.txt"
+        with open(sync_file, 'a') as f:
+            f.write(f'{self.video_filepath.stem},{frame},{ts}\n')
+
         elapsed_time = frame / self.fps
         if type(ts) is float:
             start_time = ts - elapsed_time
@@ -106,9 +115,6 @@ class ProcessVideo:
         generic_so_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
-
-        #image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
-        #os.makedirs(image_path, exist_ok=True)
 
         capture = cv2.VideoCapture(str(self.video_filepath))
         frame_count = self.get_frame_count()
@@ -159,17 +165,12 @@ class ProcessVideo:
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        #image_path = str(self.image_out_path) + "/" + self.video_filename + "/"
-        #os.makedirs(image_path, exist_ok=True)
-
         capture = cv2.VideoCapture(str(self.video_filepath))
         frame_count = self.get_frame_count()
 
         i = 0  # index for all frames to extract
         j = 0  # index for frames list to extract as image
         k = 0  # intersection string description counter
-
-        # todo: check if frame/timestamp is in video before trying to extract
 
         while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
 

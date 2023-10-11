@@ -9,4 +9,4 @@ tqdm
 lxml
 pillow
 python-dateutil
-
+icecream

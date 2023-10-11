@@ -4,9 +4,8 @@
 
 [Using SSOSS: A How To Video](https://youtu.be/R7qm3d8Ego8)
 
-SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway network. This is a 
-streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a synchronized recorded video file.
-
+SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway. This is a 
+streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a recorded video file.
 
 <p align="center">
   <img src="../media/ssoss_screenshot.png?raw=true" width=45% /> <br>
@@ -19,12 +18,12 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 
 
 ## Features
-* Automated data processing: The SSOSS scripts uses a combination of GPS and video data to extract images of traffic signals and/or roadway signs.
+* Automated data processing: The SSOSS tool uses a combination of GPS and video data to extract images of traffic signals, roadway signs and/or any static road object that can be captured in a video.
 * Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
 * Image Labeling and animated GIF image tools: Python functions are included to label images or create an animated GIF from multiple images 
 
 ## Requirements
-- Python 3.8
+- Python 3.9
 - Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml 
 
 ## Installation
@@ -40,21 +39,28 @@ To use the SSOSS program,
 1. Setup the necessary input files in A and B. 
 2. Follow the data processing commands in Part C. Jupyter Notebook available as example
 
-### A. Input Files
-Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing.
+### A. Input Files: Intersection CSV File
+Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing. Both Intersection CSV files and Sign CSV template files are available in "CSV templates" folder in this github repository and includes an example intersection/sign for easy duplication. Header descriptions stays in CSV file.
+
 The intersection CSV file has the following format (as a minimum):
 
 | ID# | Cross Street 1 | Cross Street 2 | Center Intersection Latitude | Center Intersection Longitude | NB Approach Posted Speed (MPH) | EB Approach Posted Speed (MPH) | SB Approach Posted Speed (MPH) | WB Approach Posted Speed (MPH) | NB Bearing | EB Bearing | SB Bearing | WB Bearing |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 0 | Pine St | Taylor St | 37.790682244556805 | -122.41229404545489 | 25 | 25 | 25 | 30 | 356.58 | 87.12 | 162.87 | 263.94 |
 
-#### Optional Stop Bar Locations (OExperimental)
+#### Optional Stop Bar Locations (Experimental)
 For more accurate sight distance images, stop bar locations can be appended to each intersection row. Below shows an example for the Northbound and Eastbound approaches.
 
 | NB Stop Bar Left Side (Latitude) | NB Stop Bar Left Side (Longitude) | NB Stop Bar Right Side (Latitude) | NB Stop Bar Right Side (Longitude) | EB Stop Bar Left Side (Latitude) | EB Stop Bar Left Side (Longitude) | EB Stop Bar Right Side (Latitude) | EB Stop Bar Right Side (Longitude) | SB Stop Bar Left Side (Latitude) | SB Stop Bar Left Side (Longitude) | SB Stop Bar Right Side (Latitude) | SB Stop Bar Right Side (Longitude) | WB Stop Bar Left Side (Latitude) | WB Stop Bar Left Side (Longitude) | WB Stop Bar Right Side (Latitude) | WB Stop Bar Right Side (Longitude) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 37.79055490933646 | -122.41231165549507 | 37.79056709721846 | -122.41222448370476 | 37.79071792444257 | -122.41241972749047 | 37.790609293471164 | -122.41239692871453 | 37.79078277043246 | -122.41224998121827| 37.79076899286676 | -122.41237537448755 | 37.79064499466002 | -122.41213464623262 | 37.790755745205026 | -122.41215543335213 |
 
+### A. Input Files: Sign CSV File
+Data related to signs (or simple static road objects) use the following format as a CSV input file.
+
+| ID# | Street Name | Latitude| Longitude | Direction | Sign Description | Distance (ft)
+|---|---|---|---|---|---|---|
+1 | Newell Ave | 37.89256331423276 | -122.06077411022638 | EB | Bike Sign - W11-1 | 150
 
 ### B. Data Collection
 Collect data simultaneously:
@@ -62,7 +68,7 @@ Collect data simultaneously:
    a. Use GPX Version 1.0 with logging every second
 2. Video Recording
    a. Record at 2 Megapixel resolution or more
-   b. Record at 30 frames per second or higher
+   b. Record at 30 frames per second or higher (60 fps preferred)
 
 ### C. Data Processing: Argparse Command Line
 ```Shell
@@ -75,26 +81,6 @@ Collect data simultaneously:
                                         --sync_frame 456 --sync_timestamp 2022-10-24T14:21:54.32Z
 ```
 
-
-
-#### Python Notebook
-
-```python
-    import ssoss as ss
-
-signals_csv = "signal"  # .csv is omitted
-gpx_file = "drive_1"  # .gpx is omitted
-
-signal_project = ProcessRoadObjects(signals_csv, gpx_file)
-sightings = signal_project.intersection_checks()
-
-vid_file = "drive_1.MP4"
-video = ss.ProcessVideo(vid_file)
-video.sync(200, "2022-10-24T14:21:54.988Z")  # See Sync Process below
-video.extract_sightings(sightings, signal_project)
-```
-
-At this point, progress bars should load while the sight images are saved to the output folder.
 
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has

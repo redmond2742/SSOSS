@@ -1,0 +1,2 @@
+#,Street1,Street2,Latitude,Longitude,spd_nb,spd_eb,spd_sb,spd_wb,bearing_nb,bearing_eb,bearing_sb,bearing_wb,nb1_lat,nb1_lon,nb2_lat,nb2_lon,eb1_lat,eb1_lon,eb2_lat,eb2_lon,sb1_lat,sb1_lon,sb2_lat,sb2_lon,wb1_lat,wb1_lon,wb2_lat,wb2_lon
+1,California Blvd,Ygnacio Valley Rd,37.904976,-122.065751,35,30,35,30,341.04,70.44,161.04,233,37.90482644,-122.0657089,37.904873,-122.0655432,37.90493543,-122.0659597,37.90480951,-122.0659,37.90515764,-122.0658141,37.90511426,-122.0659818,37.90503331,-122.0655587,37.90515817,-122.0656043

@@ -7,16 +7,6 @@ def args_static_obj_gpx_video(generic_so_file = "", gpx_file="", video_file="",
                               vid_sync=("",""), frame_extract=("",""), extra_out=(True, False)):
     
     sightings = ""
-    """
-    #sightings = ""
-    if signal_file and gpx_file:
-        project = process_road_objects.ProcessRoadObjects(gpx_filestring = gpx_file.name, signals_filestring = signal_file.name)
-        sightings = project.intersection_checks()
-        ic(sightings)
-         
-    if signal_file:
-        process_road_objects.ProcessRoadObjects(signals_filestring = signal_file.name)
-    """
     if generic_so_file and gpx_file:
         project = process_road_objects.ProcessRoadObjects(gpx_filestring = gpx_file.name, generic_static_object_filestring = generic_so_file.name)
         if project.get_static_object_type() == "intersection":
@@ -68,18 +58,7 @@ def main():
         "Enter Start and End Time (in seconds) for still images from video file"
     )
 
-    # Static Object & GPX arguments
-    so_and_gpx_group.add_argument("-soi", "--intersection_static_objects",
-                           metavar="Intersection Static Objects CSV File",
-                           help=".csv input file of intersection static road objects",
-                           type=argparse.FileType('r'),
-                           )
-    
-    so_and_gpx_group.add_argument("-sog", "--generic_static_objects",
-                            metavar="Generic Static Objects CSV File",
-                            help=".csv input file of generic static road objects",
-                            type=argparse.FileType('r'),
-                            )
+    # Static Object & GPX arguments                            )
     so_and_gpx_group.add_argument("-so", "--static_object_file",
                            metavar="Static Object File",
                            help=".csv file to process of static road objects (Intersections, signs, etc.)",
