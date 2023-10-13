@@ -39,7 +39,7 @@ def args_static_obj_gpx_video(generic_so_file = "", gpx_file="", video_file="",
 def main():
     parser = argparse.ArgumentParser(
     prog="Safe Sightings of Signs and Signals",
-    description="A automated tool to verify visible traffic signs and signals using GPX and Video files")
+    description="Software to help verify visible traffic signs and signals using GPX and Video files")
 
     so_and_gpx_group = parser.add_argument_group(
         "Static Objects and GPX Input",
@@ -99,16 +99,7 @@ def main():
         sync_input = (args.sync_frame, args.sync_timestamp)
     if args.frame_extract_start and args.frame_extract_end:
         frames = (args.frame_extract_start[0], args.frame_extract_end[0])
-    """Remove?
-    if args.label and args.gif:
-        label_and_gif = (args.label, args.gif)
-    elif args.label:
-        label_and_gif = (args.label, False)
-    elif args.gif:
-        label_and_gif = (False, args.gif)
-    else:
-        label_and_gif = (True, False)
-    """
+
     lb = gif = bbox = False 
     if args.label:
         lb = True

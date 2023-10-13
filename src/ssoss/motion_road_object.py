@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from ssoss.static_road_object import StaticRoadObject, Intersection
-from icecream import ic
+
 
 
 class GPXPoint:

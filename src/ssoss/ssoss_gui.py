@@ -31,7 +31,7 @@ def main():
     )
 
     # GPX arguments
-    gpx_group.add_argument("-so", "--static_objects",
+    gpx_group.add_argument("-so", "--static_object_file",
                            metavar="Static Objects CSV File",
                            help=".csv input file of static road objects",
                            type=argparse.FileType('r'),
@@ -65,7 +65,7 @@ def main():
     video_sync_group.add_argument("-sf", "--sync_frame", metavar="1. Sync Frame", help="Sync Frame number for video. Sync with timestamp also", type=int)
     video_sync_group.add_argument("-st", "--sync_timestamp", metavar="2. Sync Timestamp", help="2. Sync Timestamp ('2022-10-24T14:21:54.988Z') for video. Sync with frame number also", type=str)
 
-    video_sync_group.add_argument("-lb", "--labelbox", metavar="Overlay Image Label", help="Include descriptive label on bottom of image", action="store_true", default=True)
+    video_sync_group.add_argument("-label", "--label", metavar="Overlay Image Label", help="Include descriptive label on bottom of image", action="store_true", default=True)
     video_sync_group.add_argument("-gif", "--gif", metavar="Create Animated GIF", help="Generate GIF of Sight Distance", action="store_true", default=False)
 
     args = parser.parse_args()
@@ -76,18 +76,21 @@ def main():
         sync_input = (args.sync_frame, args.sync_timestamp)
     if args.frame_extract_start and args.frame_extract_end:
         frames = (args.frame_extract_start[0], args.frame_extract_end[0])
-    if args.labelbox and args.gif:
-        label_and_gif = (args.labelbox, args.gif)
-    elif args.labelbox:
-        label_and_gif = (args.labelbox, False)
-    elif args.gif:
-        label_and_gif = (False, args.gif)
-    else:
-        label_and_gif = (True, False)
 
-    args_static_obj_gpx_video(args.static_objects, args.gpx_file,
-                                        args.video_file,
-                                        sync_input, frames, label_and_gif)
+    lb = gif = bbox = False
+    if args.label:
+        lb = True
+    if args.gif:
+        gif = True
+    lb_gif_bbox = (lb, gif, bbox)
+
+    args_static_obj_gpx_video(generic_so_file = args.static_object_file,
+                              gpx_file = args.gpx_file,
+                              video_file = args.video_file,
+                              vid_sync = sync_input,
+                              frame_extract = frames,
+                              extra_out = lb_gif_bbox
+                              )
 
 
 if __name__ == "__main__":
