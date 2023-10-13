@@ -72,7 +72,7 @@ Collect data simultaneously:
 
 ### C. Data Processing: Argparse Command Line
 ```Shell
-(ssoss_virtual_env) python ssoss_cli.py -h
+(ssoss_virtual_env) python ssoss_cli.py -help
 ```
 
 #### Basic Usage
@@ -80,7 +80,6 @@ Collect data simultaneously:
 (ssoss_virtual_env) python ssoss_cli.py --static_objects signals.csv --gpx_file drive.gpx --video_file vid.mov 
                                         --sync_frame 456 --sync_timestamp 2022-10-24T14:21:54.32Z
 ```
-
 
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has
@@ -98,6 +97,9 @@ where ### is the frame number of the image.
 
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
 
+##### Sync.txt Logger
+Automatically saves frame number and timestamp to sync.txt file in the ./out/ directory so a log of when a video file was synchronized is saved.
+
 ### Sources of Error
 While SSOSS does provide approximate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
 
@@ -110,21 +112,23 @@ While SSOSS does provide approximate sight distance images, their are various so
 | Video View of Roadway | 0 - 25 ft                    | Calibrating the closest visible ground spot as seen on the video can eliminate this error. Typically 20ft. |
 | Video Time Sync       | 0 ft +                       | If the syncronization process is not done accuratly, this can be a huge source of error.                   |
 
-## Documentation
+## Optional Tools
 
-### Optional Tool: GIF Creator
+### GIF Creator
 Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus or an few frames are obstructed.
 
 Include the -- gif flag in the command line to create. Note: this requires additional processing time for large video files.
 
 Saves .gif file in ./out/[video filename]/gif/
 
-### Helper Function: Label Image
+### Label Image
 Add a label to the bottom of the image by including the --label flag in the command line.
 
 Saves images in ./out/[video filename]/signal_sightings/labeled
 
-### Heuristic
+
+
+## Heuristic
 
 For Each GPX Point:
 * What are the closest & approaching intersections
