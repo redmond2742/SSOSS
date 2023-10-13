@@ -37,8 +37,9 @@ To install SSOSS:
 
 ## Usage
 To use the SSOSS program, 
-1. Setup the necessary input files in A and B. 
-2. Follow the data processing commands in Part C. Jupyter Notebook available as example
+1. Collect and Setup Data as described in section A.1 or A.2 and B below.
+2. Syncronize the video as described in [the SSOSS How To Video](https://youtu.be/R7qm3d8Ego8) and [mentioned below](https://github.com/redmond2742/ssoss#sync-gpx--video-process).
+2. Follow the commandline commands in Part C or use the Windows OS GUI interface.
 
 ### A.1 Input File: Intersection CSV File
 Data related to the static road objects (signs and traffic signals) need to be saved in a CSV file for used in processing. Both Intersection CSV files and Sign CSV template files are available in "CSV templates" folder in this github repository and includes an example intersection/sign for easy duplication. Header descriptions stays in CSV file.
@@ -78,8 +79,11 @@ Collect data simultaneously:
 
 #### Basic Usage
 ```Shell
-(ssoss_virtual_env) python ssoss_cli.py --static_objects signals.csv --gpx_file drive.gpx --video_file vid.mov 
-                                        --sync_frame 456 --sync_timestamp 2022-10-24T14:21:54.32Z
+(ssoss_virtual_env) python ssoss_cli.py --static_objects signals.csv 
+                                        --gpx_file drive.gpx 
+                                        --video_file vid.mov 
+                                        --sync_frame 456 
+                                        --sync_timestamp 2022-10-24T14:21:54.32Z
 ```
 
 #### Sync GPX & Video Process
@@ -89,7 +93,9 @@ video frames between two time values. When looking at the GPX points, the approx
 and all the frames can be extracted. This method is:
 
 ```Shell
-        (ssoss_virtual_env) python ssoss_cli.py -video_file vid.mov --frame_extract_start 4 --frame_extract_end 6
+        (ssoss_virtual_env) python ssoss_cli.py -video_file vid.mov 
+                                                --frame_extract_start 4 
+                                                --frame_extract_end 6
 ```
 
 Check the printed logs to see the saved output location. Default is:
@@ -126,8 +132,6 @@ Saves .gif file in ./out/[video filename]/gif/
 Add a label to the bottom of the image by including the --label flag in the command line.
 
 Saves images in ./out/[video filename]/signal_sightings/labeled
-
-
 
 ## Heuristic
 
