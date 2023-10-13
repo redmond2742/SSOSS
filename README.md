@@ -74,7 +74,7 @@ Collect data simultaneously:
 
 ### C. Data Processing: Argparse Command Line
 ```Shell
-(ssoss_virtual_env) python ssoss_cli.py -help
+(ssoss_virtual_env) python ssoss_cli.py --help
 ```
 
 #### Basic Usage
