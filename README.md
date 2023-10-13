@@ -20,8 +20,8 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 ## Features
 * Automated data processing: The SSOSS tool uses a combination of GPS and video data to extract images of traffic signals, roadway signs and/or any static road object that can be captured in a video.
 * Example CSV templates are provided to help get started making the static roadway object input file for both static objects and traffic signals.
-* Video Synchronization Helper Tools: Python methods are provided to export the video frames and help to synchronize the video file.
-* Image Labeling and animated GIF image tools: Python functions are included to label images or create an animated GIF from multiple images 
+* Video Synchronization Helper Tools: Options are provided to export the video frames and help to synchronize the video file.
+* Image Labeling and animated GIF image tools: Selectable options are included to label images or create an animated GIF from multiple images.
 
 ## Requirements
 - Python 3.9
