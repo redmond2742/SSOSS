@@ -1,11 +1,12 @@
 # Safe Sightings of Signs and Signals (SSOSS)
 
-[SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
-
-[Using SSOSS: A How To Video](https://youtu.be/R7qm3d8Ego8)
-
 SSOSS is a software tool that automates the difficult aspects of verifying if traffic signs and signals are visible or obstructed on a roadway. This is a 
 streamlined and repeatable process to monitor signs and signals along any roadway using a simple input file (.CSV), GPS recorded data file (.GPX) and a recorded video file.
+
+## Videos
+### [1. SSOSS Summary Video](https://www.youtube.com/watch?v=VbKtDvSXblM)
+### [2. Using SSOSS: A How To Video](https://youtu.be/R7qm3d8Ego8)
+## Screenshots
 
 <p align="center">
   <img src="../media/ssoss_screenshot.png?raw=true" width=45% /> <br>
