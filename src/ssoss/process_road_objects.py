@@ -115,7 +115,7 @@ class ProcessRoadObjects:
         return self.intersection_listDF.iloc[intersection_id-1, 1]
     
     def get_generic_so_object_by_id(self, id):
-        return self.generic_so_listDF.iloc[id-2, 1]
+        return self.generic_so_listDF.iloc[id-1, 1]
     
     def get_static_object_type(self):
         return self.static_object_type
@@ -485,11 +485,11 @@ class ProcessRoadObjects:
                                 index_item = generic_so_desc.index(approach_generic_so.print_detail_info())
                                 if t_shift_acc-time_buffer < generic_so_ts[index_item] < t_shift_acc + time_buffer:
                                     if filtered_sightings[1] < generic_so_error[index_item]:
-                                        #todo: make remove function
+                                        # remove
                                         del generic_so_desc[index_item]
                                         del generic_so_ts[index_item]
                                         del generic_so_error[index_item]
-                                        #todo: make append function
+                                        # append
                                         generic_so_desc.append(approach_generic_so.print_detail_info())
                                         generic_so_ts.append(t_shift_acc)
                                         generic_so_error.append(filtered_sightings[1])
