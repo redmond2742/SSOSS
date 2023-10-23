@@ -129,7 +129,7 @@ class ProcessVideo:
                           unit=" Frames"):
                 ret, frame = capture.read()
                 if ret is False:
-                    print("ERROR: ret is FALSE on OpenCV image")
+                    print("ERROR: ret is FALSE on OpenCV image") 
                     break
                 if i == extract_frames[j] and j <= len(extract_frames)-1:
                     frame_name = str(generic_so_desc[j]) + '.jpg'
@@ -456,8 +456,6 @@ class ProcessVideo:
             return min(w_font_scl, h_font_scl)
         else:
             return max(w_font_scl, h_font_scl)
-    
-
 
     @staticmethod
     def find_x_start_new_label(x_size, w, label):
@@ -469,22 +467,91 @@ class ProcessVideo:
             start_x = 0
             trunc_label = label[0:w]
         return start_x, trunc_label
+
             
-  
+    def labels(self, img, output_filename, descriptive_label, height_percent:tuple, ssoss_and_descriptive = True ):
+
+        alpha = 1  # Transparency factor.
+        text_font = cv2.FONT_HERSHEY_PLAIN
+        font_thickness = 1
+        BLACK = (0, 0, 0)
+        WHITE = (255, 255, 255)
+        img_copy = img.copy()
+
+        # given inputs
+        img_height, img_width, channels = img.shape
+        descriptive_label_percent, ssoss_percent = height_percent
+
+        # calculated descriptive label dimensions
+        descriptive_label_height = int(img_height * descriptive_label_percent)
+        descriptive_label_y = img_height - descriptive_label_height
+        font_scale = self.find_font_scale(descriptive_label, max_width = img_width)
+        textsize_x, textsize_y = cv2.getTextSize(descriptive_label, text_font,  font_scale, font_thickness)[0]
+        text_y = int((img_height - descriptive_label_height/2.0)+textsize_y/2.0)
+        text_x, descriptive_label = self.find_x_start_new_label(textsize_x, img_width, descriptive_label)
+
+        if ssoss_and_descriptive:
+
+            ssoss_label = "Created using Free and Open Source Software: Safe Sightings of Signs and Signals (SSOSS): Github.com/redmond2742/ssoss"
+
+            # calculated ssoss_ad dimensions
+            ssoss_label_height = int(img_height * ssoss_percent)
+            ssoss_label_font_scale = self.find_font_scale(ssoss_label, max_height = ssoss_label_height)
+            ssoss_label_textsize_x, ssoss_textsize_y = cv2.getTextSize(ssoss_label, text_font, ssoss_label_font_scale, 1)[0]
+            
+            ssoss_label_text_x = int((img_width - ssoss_label_textsize_x) / 2.0)
+            ssoss_label_text_y = int(img_height)
+
+            ssoss_text_x, fitted_ssoss_label = self.find_x_start_new_label(ssoss_label_textsize_x, img_width, ssoss_label)
+
+            # Calculated y-coordinates for different labels
+            ssoss_label_y = img_height - ssoss_label_height  # y-coordinate of top of ssoss ad
+            above_descriptive_and_ssoss_label_y = ssoss_label_y - descriptive_label_height # y-coordinate of top of descriptive label
+            descriptive_and_ssoss_label_text_y = ssoss_label_y - int(textsize_y/2.0)
+
+            #ssoss ad box
+            cv2.rectangle(img_copy,pt1=(0, img_height), pt2=(img_width, ssoss_label_y), color = BLACK, thickness=-1)
+            ssoss_and_descriptive_label = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
+            #image label box
+            cv2.rectangle(img_copy, pt1=(0, ssoss_label_y), pt2=(img_width, above_descriptive_and_ssoss_label_y), color=WHITE, thickness=-1)
+            ssoss_and_descriptive_label = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
+            # text for ssoss ad and label
+            ssoss_and_descriptive_label = cv2.putText(ssoss_and_descriptive_label, descriptive_label, (text_x, descriptive_and_ssoss_label_text_y), text_font, font_scale, BLACK, 2)
+            ssoss_and_descriptive_label = cv2.putText(ssoss_and_descriptive_label, fitted_ssoss_label, (ssoss_text_x, ssoss_label_text_y), text_font, ssoss_label_font_scale, WHITE, 2)
+            # save image
+            cv2.imwrite(output_filename, ssoss_and_descriptive_label)
+        
+        else:
+            # no ssoss label, just descriptive label (not recommended)
+            cv2.rectangle(img_copy, pt1=(0, img_height), pt2=(img_width, descriptive_label_y), color=WHITE, thickness=-1)
+            img_new = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
+            cv2.putText(img_new, descriptive_label, (text_x, text_y), text_font, font_scale, BLACK, 2)
+            cv2.imwrite(output_filename, img_new)
+
+    @staticmethod
+    def generate_descriptive_label(path, fn, road_object_info, static_object_type="generic"):
+        sro_id = int(fn.split(".")[0])
+        ts = float(fn.split("-")[-1].replace(".jpg", ""))
+        distance = 0
+        if static_object_type == "intersection":
+            b_index = int((fn.rsplit(".")[1])[0:1])
+            descriptive_label = road_object_info.intersection_frame_description(sro_id, b_index, distance, ts, desc_type="label")
+        else:
+            descriptive_label = road_object_info.generic_so_description(sro_id, distance, ts, desc_type="label")
+        return descriptive_label
     
     def generic_so_img_overlay_info_box(self, vid_filename_dir, ro_info):
         img_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         label_img_path = Path(img_path, "labeled/")
         os.makedirs(label_img_path, exist_ok=True)
 
-        alpha = 1  # Transparency factor.
-        text_font = cv2.FONT_HERSHEY_PLAIN
-        font_thickness = 1
-        ssoss_advertisment = True #  advertise ssoss on bottom of image when labeling image with description
-
         img_dir_string = str(img_path)
         label_img_dir_string = str(label_img_path)
         pattern_criteria = ['*.jpg','[!.]*']
+
+        descriptive_label_percent = 0.05 # 5% for descriptive label at bottom of image
+        ssoss_label_percent = 0.02 #  2% for ssoss advertisement label at very bottom of image
+        label_height_percents = (descriptive_label_percent, ssoss_label_percent)
 
         #  filter for images where * is wildcard and don't include hidden (.*) files
         pathlist = [f for f in Path(img_dir_string).rglob('*.jpg') if not str(f).startswith(".")]
@@ -496,73 +563,23 @@ class ProcessVideo:
                 overlay = img.copy()
 
                 label_img_name = str(Path(label_img_path, filename))
-                
-                #get img dimensions
-                img_height, img_width, channels = img.shape
-                rect_h = int(img_height * 0.05)
-                rect_w = img_width
-                rect_y = img_height - rect_h
-                ssoss_ad_height = int(img_height * 0.02)
+                descriptive_label = self.generate_descriptive_label(label_img_path, filename, ro_info)
 
-
-                #build label
-                sro_id = int(filename.split(".")[0])
-                distance = 0
-                ts = float(filename.split("-")[-1].replace(".jpg", ""))
-                label = ro_info.generic_so_description(sro_id, distance, ts, desc_type="label")
-                font_scale = self.find_font_scale(label, max_width = rect_w)
-                textsize_x, textsize_y = cv2.getTextSize(label, text_font,  font_scale, font_thickness)[0]
-                text_y = int((img_height - rect_h/2.0)+textsize_y/2.0)
-                text_x, label = self.find_x_start_new_label(textsize_x,rect_w,label)
-                
-                #white box and text label
-                # (B,G,R) for color
-
-                # ssoss advertisiment label, default will print on bottom
-                if ssoss_advertisment:
-
-                    ssoss_ad_label = "Created using Free and Open Source Software: Safe Sightings of Signs and Signals (SSOSS): Github.com/redmond2742/ssoss"
-                    ssoss_ad_font_scale = self.find_font_scale(ssoss_ad_label, max_height = ssoss_ad_height, max_width = img_width)
-                    ssoss_ad_textsize_x, ssoss_ad_textsize_y = cv2.getTextSize(ssoss_ad_label, text_font,  ssoss_ad_font_scale, font_thickness)[0]
-                    ssoss_text_y = img_height
-                    ssoss_text_x, ssoss_label = self.find_x_start_new_label(ssoss_ad_textsize_x, rect_w ,ssoss_ad_label)
-
-                    ssoss_ad_y = img_height - ssoss_ad_height
-                    label_and_ssoss_ad_y = ssoss_ad_y - rect_h
-                    label_and_ssoss_ad_text_y = ssoss_ad_y - int(textsize_y/2.0)
-
-                    #ssoss ad box
-                    cv2.rectangle(overlay,pt1=(0, img_height), pt2=(rect_w, ssoss_ad_y), color=(0, 0, 0), thickness=-1)
-                    ssoss_and_label = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-                    #image label box
-                    cv2.rectangle(overlay, pt1=(0, ssoss_ad_y), pt2=(rect_w, label_and_ssoss_ad_y), color=(255, 255, 255), thickness=-1)
-                    ssoss_and_label = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-                    # text for ssoss ad and label
-                    ssoss_and_label = cv2.putText(ssoss_and_label, label, (text_x, label_and_ssoss_ad_text_y), text_font, font_scale, (0, 0, 0), 2)
-                    ssoss_and_label = cv2.putText(ssoss_and_label, ssoss_label, (ssoss_text_x, ssoss_text_y), text_font, ssoss_ad_font_scale, (255, 255, 255), 2)
-                    # save image
-                    cv2.imwrite(label_img_name, ssoss_and_label)
-
-                else:
-                    # no ssoss ad box, just image label
-                    cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
-                    img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-                    cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
-                    cv2.imwrite(label_img_name, img_new)
-
+                self.labels(img, label_img_name, descriptive_label, label_height_percents)
+           
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
         img_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         label_img_path = Path(img_path, "labeled/")
         os.makedirs(label_img_path, exist_ok=True)
 
-        alpha = 1  # Transparency factor.
-        text_font = cv2.FONT_HERSHEY_PLAIN
-        font_thickness = 1
-
         img_dir_string = str(img_path)
         label_img_dir_string = str(label_img_path)
         pattern_criteria = ['*.[0-3]-*.jpg','[!.]*']
+
+        descriptive_label_percent = 0.05 # 5% for descriptive label at bottom of image
+        ssoss_label_percent = 0.02 #  2% for ssoss advertisement label at very bottom of image
+        label_height_percents = (descriptive_label_percent, ssoss_label_percent)
 
         #  filter for images where * is wildcard and don't include hidden (.*) files
         pathlist = [f for f in Path(img_dir_string).rglob('*.[0-3]-*.jpg') if not str(f).startswith(".")]
@@ -574,42 +591,6 @@ class ProcessVideo:
                 overlay = img.copy()
 
                 label_img_name = str(Path(label_img_path, filename))
+                descriptive_label = self.generate_descriptive_label(label_img_path, filename,ro_info, static_object_type="intersection")
 
-                # get img dimensions
-                img_height, img_width, channels = img.shape
-                rect_h = int(img_height * 0.05)
-                rect_w = img_width
-                rect_y = img_height - rect_h
-
-                # build label
-                sro_id = int(filename.split(".")[0])
-                b_index = int((filename.rsplit(".")[1])[0:1])
-                distance = 0
-                ts = float(filename.split("-")[-1].replace(".jpg", ""))
-                label = ro_info.intersection_frame_description(sro_id, b_index, distance, ts, desc_type="label")
-                font_scale = self.find_font_scale(label, rect_w)
-                textsize_x, textsize_y = cv2.getTextSize(label, text_font,  font_scale, font_thickness)[0]
-                text_y = int((img_height - rect_h/2.0)+textsize_y/2.0)
-
-                if textsize_x <= rect_w:
-                    text_x = int((rect_w-textsize_x)/2.0)
-                else:
-                    text_x = 0
-                    label = label[0:rect_w]
-
-                cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
-                img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-                cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
-                cv2.imwrite(label_img_name, img_new)
-
-                # (x,y))
-                """
-                0,0                                                              img_width,0
-                0, img_height - img_height*5%             img_width, img_height - img_height*5%
-                
-                0,img_height                                             img_width, img_height
-                """
-                cv2.rectangle(overlay, pt1=(0, img_height), pt2=(rect_w, rect_y), color=(255, 255, 255), thickness=-1)
-                img_new = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
-                cv2.putText(img_new, label, (text_x, text_y), text_font, font_scale, (0, 0, 0), 2)
-                cv2.imwrite(label_img_name, img_new)
+                self.labels(img, label_img_name, descriptive_label, label_height_percents)

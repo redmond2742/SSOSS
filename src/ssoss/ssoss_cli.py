@@ -13,7 +13,6 @@ def args_static_obj_gpx_video(generic_so_file = "", gpx_file="", video_file="",
             sightings = project.intersection_checks()
         elif project.get_static_object_type() == "generic static object":
             sightings = project.generic_so_checks()
-        ic(sightings)
    
     if generic_so_file:
         process_road_objects.ProcessRoadObjects(generic_static_object_filestring = generic_so_file.name)
