@@ -150,5 +150,20 @@ From the sight distance timestamp and synchronized video file, the frame is extr
 ## Contributions
 Contributions are welcome to the SSOSS project! If you have an idea for a new feature or have found a bug, please open an issue or submit a pull request.
 
+## Press
+
+[Pioneer Winner of 2023 FHWA Build a Better Mouse Trap competition - Award Booklet [page 8]](https://www.fhwa.dot.gov/clas/pdfs/2023_mousetrap_entries_booklet.pdf)
+
+[Caltrans Division of Local Assistance Blog - SSOSS is the Pioneer Award from the 2023 Build A Better Mousetrap competition](https://www.localassistanceblog.com/2023/10/09/pioneer-award-ceremony-for-the-city-of-walnut-creek/)
+
+Caltrans Technical Assistance Program
+* [SSOSS](https://caltap.org/ssoss)
+* [The city of Walnut Creek, CA wins 2023 Build a Better Mouse Trap Competition](https://caltap.org/events-detail.aspx?eid=77)
+* [CalTAP Recognizes Walnut Creek, CA](https://caltap.org/events-detail.aspx?eid=107)
+
+[Public Roads Magazine: 2023 Build a Better Mouse Trap Winners [Page 8]](https://highways.dot.gov/sites/fhwa.dot.gov/files/public-roads-magazine-autumn-2023-edition.pdf)
+
+[Public Roads Autumn 2023](https://highways.dot.gov/public-roads/autumn-2023/innovation)
+
 ## License
 The SSOSS project is licensed under the MIT License. See LICENSE for more information.
