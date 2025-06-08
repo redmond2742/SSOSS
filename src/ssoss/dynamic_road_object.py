@@ -404,9 +404,8 @@ class DynamicRoadObject:
             "approaching": []
         }
 
-        for i in tqdm(range(2, self.gpx_df.last_valid_index()),
-                      desc="Loading GPX:",
-                      unit="GPX Points"):
+        last_idx = self.gpx_df.last_valid_index()
+        for i in tqdm(range(2, last_idx), desc="Loading GPX:", unit="GPX Points"):
             self.update_location_simple(i)
             cai = self.get_closest_approaching_intersection()
             if not cai:
@@ -421,8 +420,14 @@ class DynamicRoadObject:
 
         return appr_dict
 
-    def update_approach_dict(self, appr_dict: dict, cai, appr_distance: float, approaching_sd: bool) -> None:
-        """Append approach information for a single GPX point to the dictionary."""
+    def update_approach_dict(
+        self,
+        appr_dict: dict,
+        cai: Intersection,
+        appr_distance: float,
+        approaching_sd: bool,
+    ) -> None:
+        """Append approach information for a single GPX point to ``appr_dict``."""
 
         appr_dict["id"].append(cai.get_id_num())
         appr_dict["appr_dir"].append(self.approach_leg(cai))

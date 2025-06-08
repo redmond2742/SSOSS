@@ -176,30 +176,37 @@ class ProcessVideo:
     def extract_frames_to_images(self, capture, extract_frames, intersection_desc, image_path):
         """Loop through frames and save requested images."""
 
-        frame_count = self.get_frame_count()
-        i = 0  # index for all frames to extract
-        j = 0  # index for frames list to extract as image
+        if not extract_frames:
+            capture.release()
+            return
 
-        while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
-            for _ in tqdm(range(0, extract_frames[-1]), desc="Frame Search", unit=" Frames"):
-                ret, frame = capture.read()
-                if not ret:
-                    print("ERROR: ret is FALSE on OpenCV image")
-                    break
-                if i == extract_frames[j] and j <= len(extract_frames) - 1:
-                    self.save_single_frame(frame, intersection_desc[j], image_path, extract_frames[j], j, len(extract_frames))
-                    j += 1
+        j = 0
+        last_frame = extract_frames[-1]
+        for i in tqdm(range(0, last_frame + 1), desc="Frame Search", unit=" frame"):
+            if not capture.isOpened() or i >= self.get_frame_count():
+                break
+            ret, frame = capture.read()
+            if not ret:
+                print("ERROR: ret is FALSE on OpenCV image")
+                break
+            if i == extract_frames[j]:
+                self.save_single_frame(frame, intersection_desc[j], image_path, i, j, len(extract_frames))
+                j += 1
                 if j == len(extract_frames):
                     print("done processing images")
-                    capture.release()
-                    return
-                i += 1
-            if i > extract_frames[-1]:
-                break
+                    break
         capture.release()
 
-    def save_single_frame(self, frame, description, image_path, frame_idx, count, total):
-        """Save a single frame to disk."""
+    def save_single_frame(
+        self,
+        frame,
+        description: str,
+        image_path: Path,
+        frame_idx: int,
+        count: int,
+        total: int,
+    ) -> None:
+        """Save a single frame to ``image_path`` and log progress."""
 
         frame_name = f"{description}.jpg"
         frame_filepath = image_path / frame_name
