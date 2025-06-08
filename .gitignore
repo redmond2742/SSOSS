@@ -8,4 +8,7 @@ dist/
 /src/ssoss/.DS_Store
 /src/ssoss/.idea/
 
+# Ignore compiled Python files
+__pycache__/
+
 .idea
