@@ -12,5 +12,9 @@ except Exception:
     # if it isn't installed when running in minimal environments such as tests.
     pass
 
-__version__ = importlib.metadata.version("ssoss")
+try:
+    __version__ = importlib.metadata.version("ssoss")
+except importlib.metadata.PackageNotFoundError:
+    # Package metadata not found when running from source
+    __version__ = "0.0.0"
 
