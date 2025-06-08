@@ -3,6 +3,7 @@
 import glob
 import os
 import shutil
+import subprocess
 from pathlib import PurePath, Path
 from datetime import timedelta, timezone, datetime
 import dateutil
@@ -103,6 +104,25 @@ class ProcessVideo:
                 prev_frame = frame_of_video
 
         return intersection_desc, frames
+
+    def save_frame_ffmpeg(self, frame_number: int, output_path: Path) -> None:
+        """Save a specific frame quickly using ffmpeg."""
+        timestamp = frame_number / self.fps
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            str(timestamp),
+            "-i",
+            str(self.video_filepath),
+            "-frames:v",
+            "1",
+            str(output_path),
+        ]
+        subprocess.run(cmd, check=True)
     
     def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
@@ -116,37 +136,15 @@ class ProcessVideo:
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        capture = cv2.VideoCapture(str(self.video_filepath))
-        frame_count = self.get_frame_count()
-
-        i = 0  # index for all frames to extract
-        j = 0  # index for frames list to extract as image
-        k = 0  # intersection string description counter
-
-        while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
-            for current_frame in tqdm(range(0, extract_frames[-1]),
-                          desc="Frame Search",
-                          unit=" Frames"):
-                ret, frame = capture.read()
-                if ret is False:
-                    print("ERROR: ret is FALSE on OpenCV image") 
-                    break
-                if i == extract_frames[j] and j <= len(extract_frames)-1:
-                    frame_name = str(generic_so_desc[j]) + '.jpg'
-                    frame_filepath = image_path / frame_name
-                    cv2.imwrite(str(frame_filepath), frame)
-                    print(
-                        f'PICTURE CAPTURED AT {extract_frames[j]}: {generic_so_desc[j]}, Saved {j + 1} picture(s) of {len(extract_frames)}')
-                    j += 1
-                    k += 1
-                if j == len(extract_frames):
-                    print("done processing images")
-                    capture.release()
-                    break
-                i += 1
-            if i > extract_frames[-1]:
-                break
-        capture.release()
+        for desc, frame_num in tqdm(
+                list(zip(generic_so_desc, extract_frames)),
+                desc="Frame Extraction",
+                unit=" frame"):
+            frame_name = str(desc) + '.jpg'
+            frame_filepath = image_path / frame_name
+            self.save_frame_ffmpeg(frame_num, frame_filepath)
+            print(
+                f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
         if label_img:
             self.generic_so_img_overlay_info_box(self.video_filename, project)
@@ -165,38 +163,15 @@ class ProcessVideo:
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        capture = cv2.VideoCapture(str(self.video_filepath))
-        frame_count = self.get_frame_count()
-
-        i = 0  # index for all frames to extract
-        j = 0  # index for frames list to extract as image
-        k = 0  # intersection string description counter
-
-        while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
-
-            for current_frame in tqdm(range(0, extract_frames[-1]),
-                          desc="Frame Search",
-                          unit=" Frames"):
-                ret, frame = capture.read()
-                if ret is False:
-                    print("ERROR: ret is FALSE on OpenCV image")
-                    break
-                if i == extract_frames[j] and j <= len(extract_frames)-1:
-                    frame_name = str(intersection_desc[j]) + '.jpg'
-                    frame_filepath = image_path / frame_name
-                    cv2.imwrite(str(frame_filepath), frame)
-                    print(
-                        f'PICTURE CAPTURED AT {extract_frames[j]}: {intersection_desc[j]}, Saved {j + 1} picture(s) of {len(extract_frames)}')
-                    j += 1
-                    k += 1
-                if j == len(extract_frames):
-                    print("done processing images")
-                    capture.release()
-                    break
-                i += 1
-            if i > extract_frames[-1]:
-                break
-        capture.release()
+        for desc, frame_num in tqdm(
+                list(zip(intersection_desc, extract_frames)),
+                desc="Frame Extraction",
+                unit=" frame"):
+            frame_name = str(desc) + '.jpg'
+            frame_filepath = image_path / frame_name
+            self.save_frame_ffmpeg(frame_num, frame_filepath)
+            print(
+                f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {intersection_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
         if label_img:
             self.img_overlay_info_box(self.video_filename, project)
@@ -247,27 +222,14 @@ class ProcessVideo:
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "frames/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        capture = cv2.VideoCapture(str(self.video_filepath))
-        #print(f'Video is Open: {self.capture.isOpened()}')
-        i = 0
         start_frame = int(self.get_fps() * start_sec)
         end_frame = int(self.get_fps() * end_sec)
 
-        while capture.isOpened():
-            ret, frame = capture.read()
-            if ret == False:
-                break
-            if start_frame <= i and i <= end_frame:
-                frame_name = 'Frame' + str(i) + '.jpg'
-                frame_filepath = image_path / frame_name
-                cv2.imwrite(str(frame_filepath), frame)
-                print(f'Saved Image {i} to {frame_filepath}')
-            i += 1
-
-            if i > end_frame:
-                capture.release()
-                break
-        capture.release()
+        for i in range(start_frame, end_frame + 1):
+            frame_name = 'Frame' + str(i) + '.jpg'
+            frame_filepath = image_path / frame_name
+            self.save_frame_ffmpeg(i, frame_filepath)
+            print(f'Saved Image {i} to {frame_filepath}')
 
     def generate_gif(self, desc_timestamps, project, distance=100):
         """ creates a folder of images to create a gif
@@ -316,22 +278,11 @@ class ProcessVideo:
             else:
                 frame_max = int(frame_list[i] + additional_frames)
 
-            j = 0  # frame index
-            capture = cv2.VideoCapture(str(self.video_filepath))
-            while capture.isOpened():
-                ret, frame = capture.read()
-                if ret is False:
-                    break
-                if frame_min <= j <= frame_max:
-                    frame_name = str(j) + "-" + intersection_desc[i] + '.jpg'
-                    frame_filepath = gif_path / frame_name
-                    cv2.imwrite(str(frame_filepath), frame)
-                if j > frame_max:
-                    break
-                else:
-                    j += 1
+            for j in range(frame_min, frame_max + 1):
+                frame_name = str(j) + "-" + intersection_desc[i] + '.jpg'
+                frame_filepath = gif_path / frame_name
+                self.save_frame_ffmpeg(j, frame_filepath)
             i += 1
-        capture.release()
         self.assemble_gif()
 
     def assemble_gif(self):
