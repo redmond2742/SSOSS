@@ -374,84 +374,76 @@ class DynamicRoadObject:
     def drive_gpx_stop_bar(self,
                            gpx_filename,
                            use_pickle_file=True) -> pd.DataFrame:
-        """ Load the GPX file into a dataframe with timestamp, location, speed, dist to event, bearing, and
-        id of approaching intersection
+        """Process GPX points and generate a summary dataframe.
 
-        :param gpx_directory: file directory where .gpx file is for input
-        :param gpx_filename: filename of .gpx file (without .gpx)
-        :param out_file_directory: where output files are saved to (./out/)
-        :param use_pickle_file: default to False, can be faster to load from pickle
-        :return: DataFrame with GPX calculated for sro file and saved a CSV and Pickle file of gpx information
-
+        :param gpx_filename: filename of .gpx file (without extension)
+        :param use_pickle_file: read cached pickle if available
+        :return: DataFrame with processed GPX information
         """
-        # self.gpx_filepath = gpx_directory + gpx_filename + ".gpx"
         pickle_file = self.out_file_path / (str(gpx_filename) + ".p")
         csv_file = self.out_file_path / (str(gpx_filename) + ".csv")
 
-        approach_sb_log_df = None
-
         if use_pickle_file and os.path.isfile(pickle_file):
-            approach_sb_log_df = pd.read_pickle(pickle_file)
-            return approach_sb_log_df
-        else:
-            # dictionary-> Keys:Values
-            appr_dict = {
-                "id": [],
-                "appr_dir": [],
-                "timestamp": [],
-                "time_delta": [],
-                "location": [],
-                "spd": [],
-                "distance": [],
-                "bearing": [],
-                "approaching": []
-            }
+            return pd.read_pickle(pickle_file)
 
-            for i in tqdm(range(2, self.gpx_df.last_valid_index()),
-                          desc="Loading GPX:",
-                          unit="GPX Points"):
+        appr_dict = self.parse_gpx_points()
+        return self.write_summary(appr_dict, csv_file, pickle_file)
 
-                self.update_location_simple(i)
-                cai = self.get_closest_approaching_intersection()
-                if cai is None:
-                    if i == self.gpx_df.last_valid_index() - 1:
-                        approach_sb_log_df = pd.DataFrame(appr_dict)
-                        approach_sb_log_df.to_csv(csv_file)
-                        approach_sb_log_df.to_pickle(pickle_file)
-                        print(
-                            f"exported dataframe to CSV (in {csv_file}) and Pickle (in {pickle_file})"
-                        )
-                    else:
-                        pass
-                else:
-                    approaching_sd = False
-                    appr_distance = (cai.distance_from_sb(
-                        self.get_location(), self.approach_leg(cai)) -
-                                     cai.get_sd(self.approach_leg(cai)))
-                    # print(f'{i}: {appr_distance}ft from {cai.get_name()}')
-                    if appr_distance > 0:
-                        approaching_sd = True
+    def parse_gpx_points(self) -> dict:
+        """Iterate through GPX dataframe and collect approach information."""
 
-                    appr_dict["id"].append(cai.get_id_num())
-                    appr_dict["appr_dir"].append(self.approach_leg(cai))
-                    appr_dict["timestamp"].append(self.get_utc_timestamp())
-                    appr_dict["time_delta"].append(self.get_time_step())
-                    appr_dict["location"].append(self.get_location())
-                    appr_dict["spd"].append(self.get_spd())
-                    appr_dict["distance"].append(appr_distance)
-                    appr_dict["bearing"].append(self.get_bearing())
-                    appr_dict["approaching"].append(approaching_sd)
+        appr_dict = {
+            "id": [],
+            "appr_dir": [],
+            "timestamp": [],
+            "time_delta": [],
+            "location": [],
+            "spd": [],
+            "distance": [],
+            "bearing": [],
+            "approaching": []
+        }
 
-                    if i == self.gpx_df.last_valid_index() - 1:
-                        print("WRITING DICT TO DATAFRAME")
-                        approach_sb_log_df = pd.DataFrame(appr_dict)
-                        approach_sb_log_df.to_csv(csv_file)
-                        approach_sb_log_df.to_pickle(pickle_file)
-                        print(
-                            f"Exported data frame to CSV ({csv_file}) and Pickle ({pickle_file})"
-                        )
-                        print(f'ApproachSB_DF:{approach_sb_log_df}')
+        for i in tqdm(range(2, self.gpx_df.last_valid_index()),
+                      desc="Loading GPX:",
+                      unit="GPX Points"):
+            self.update_location_simple(i)
+            cai = self.get_closest_approaching_intersection()
+            if not cai:
+                continue
 
+            appr_distance = (
+                cai.distance_from_sb(self.get_location(), self.approach_leg(cai)) -
+                cai.get_sd(self.approach_leg(cai))
+            )
+            approaching_sd = appr_distance > 0
+            self.update_approach_dict(appr_dict, cai, appr_distance, approaching_sd)
+
+        return appr_dict
+
+    def update_approach_dict(self, appr_dict: dict, cai, appr_distance: float, approaching_sd: bool) -> None:
+        """Append approach information for a single GPX point to the dictionary."""
+
+        appr_dict["id"].append(cai.get_id_num())
+        appr_dict["appr_dir"].append(self.approach_leg(cai))
+        appr_dict["timestamp"].append(self.get_utc_timestamp())
+        appr_dict["time_delta"].append(self.get_time_step())
+        appr_dict["location"].append(self.get_location())
+        appr_dict["spd"].append(self.get_spd())
+        appr_dict["distance"].append(appr_distance)
+        appr_dict["bearing"].append(self.get_bearing())
+        appr_dict["approaching"].append(approaching_sd)
+
+    @staticmethod
+    def write_summary(appr_dict: dict, csv_file: PurePath, pickle_file: PurePath) -> pd.DataFrame:
+        """Convert dict to DataFrame and write to disk."""
+
+        approach_sb_log_df = pd.DataFrame(appr_dict)
+        approach_sb_log_df.to_csv(csv_file)
+        approach_sb_log_df.to_pickle(pickle_file)
+        print(
+            f"Exported data frame to CSV ({csv_file}) and Pickle ({pickle_file})"
+        )
         return approach_sb_log_df
 
     def get_street(self, itrsxn: Intersection) -> str:
