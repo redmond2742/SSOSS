@@ -223,17 +223,29 @@ class ProcessRoadObjects:
                 columns_in_row = len(row)
                 if columns_in_row == 13:
                     self.intersection_load["id"].append(int(row[0]))
-                    self.intersection_load["intersection_obj"].append(Intersection(
-                        id_num = int(row[0]),
-                        # name1(N/S), name2(E/W)
-                        name = tuple((str(row[1]),str(row[2]))),
-                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
-                        # spd_N, spd_E, spd_S, spd_W
-                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),int(row[8]))),
-                        # bearing_N, bearing_E, bearing_S, bearing_W
-                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
-                            float(row[12])))
-                    ))
+                    self.intersection_load["intersection_obj"].append(
+                        Intersection(
+                            int(row[0]),
+                            tuple((str(row[1]), str(row[2]))),
+                            geopy.Point(float(row[3]), float(row[4])),
+                            spd=tuple(
+                                (
+                                    int(row[5]),
+                                    int(row[6]),
+                                    int(row[7]),
+                                    int(row[8]),
+                                )
+                            ),
+                            bearing=tuple(
+                                (
+                                    float(row[9]),
+                                    float(row[10]),
+                                    float(row[11]),
+                                    float(row[12]),
+                                )
+                            ),
+                        )
+                    )
                 elif columns_in_row == 29:
                     nb_sb_pts = eb_sb_pts = sb_sb_pts = wb_sb_pts = False
                     if (row[13] and row[14] and
@@ -247,29 +259,29 @@ class ProcessRoadObjects:
 
                     self.intersection_load["id"].append(int(row[0]))
                     temp_i = Intersection(
-                        id_num = int(row[0]),
-                        # name1(N/S), name2(E/W)
-                        name = tuple((str(row[1]),str(row[2]))),
-                        ctr_pnt = geopy.Point(float(row[3]),float(row[4])),
-                        # spd_N, spd_E, spd_S, spd_W
-                        spd = tuple((int(row[5]), int(row[6]), int(row[7]),
-                            int(row[8]))),
-                        # bearing_N, bearing_E, bearing_S, bearing_W
-                        bearing = tuple((float(row[9]), float(row[10]), float(row[11]),
-                            float(row[12]))),
-                        # Additional info for stop bar to improve accuracy:
-                        # NB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        stop_bar_nb = tuple((geopy.Point(row[13], row[14]),
-                            geopy.Point(row[15], row[16]))),
-                        # EB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        stop_bar_eb = tuple((geopy.Point(row[17], row[18]),
-                            geopy.Point(row[19], row[20]))),
-                        # SB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        stop_bar_sb = tuple((geopy.Point(row[21], row[22]),
-                            geopy.Point(row[23], row[24]))),
-                        # WB Stop bar. center line Point(lat, lon), shoulder Point(lat, lon)
-                        stop_bar_wb = tuple((geopy.Point(row[25], row[26]),
-                            geopy.Point(row[27], row[28])))
+                        int(row[0]),
+                        tuple((str(row[1]), str(row[2]))),
+                        geopy.Point(float(row[3]), float(row[4])),
+                        spd=tuple(
+                            (
+                                int(row[5]),
+                                int(row[6]),
+                                int(row[7]),
+                                int(row[8]),
+                            )
+                        ),
+                        bearing=tuple(
+                            (
+                                float(row[9]),
+                                float(row[10]),
+                                float(row[11]),
+                                float(row[12]),
+                            )
+                        ),
+                        stop_bar_nb=tuple((geopy.Point(row[13], row[14]), geopy.Point(row[15], row[16]))),
+                        stop_bar_eb=tuple((geopy.Point(row[17], row[18]), geopy.Point(row[19], row[20]))),
+                        stop_bar_sb=tuple((geopy.Point(row[21], row[22]), geopy.Point(row[23], row[24]))),
+                        stop_bar_wb=tuple((geopy.Point(row[25], row[26]), geopy.Point(row[27], row[28]))),
                     )
                     temp_i.set_sb_pts_bools((nb_sb_pts,eb_sb_pts,sb_sb_pts,wb_sb_pts))
                     self.intersection_load["intersection_obj"].append(temp_i)

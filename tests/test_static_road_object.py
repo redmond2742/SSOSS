@@ -16,9 +16,12 @@ class TestGetIDNumMethod(unittest.TestCase):
         55: 625,
         60: 715
     }
-    test_sro = StaticRoadObject(100, "street_name", "test_object", \
-                                geopy.Point(37.79205307308094, -122.40918793416158), \
-                                speed_sightD_tuple)
+    test_sro = StaticRoadObject(
+        100,
+        "street_name",
+        geopy.Point(37.79205307308094, -122.40918793416158),
+        spd_sd=speed_sightD_tuple,
+    )
     sro_id_result = test_sro.get_id_num()
 
     def test_get_id_num_type(self):
@@ -49,15 +52,17 @@ class TestDistanceToSB(unittest.TestCase):
     intersection_stop_bar_wb = (geopy.Point(37.792081947979, -122.40908296974182),
                                 geopy.Point(37.792137440921714, -122.40909664953729))
 
-    test_intersection = Intersection(100,
-                                     intersection_name,
-                                     intersection_ctr_pt,
-                                     intersection_spd_tuple,
-                                     intersection_bearing,
-                                     intersection_stop_bar_nb,
-                                     intersection_stop_bar_eb,
-                                     intersection_stop_bar_sb,
-                                     intersection_stop_bar_wb)
+    test_intersection = Intersection(
+        100,
+        intersection_name,
+        intersection_ctr_pt,
+        spd=intersection_spd_tuple,
+        bearing=intersection_bearing,
+        stop_bar_nb=intersection_stop_bar_nb,
+        stop_bar_eb=intersection_stop_bar_eb,
+        stop_bar_sb=intersection_stop_bar_sb,
+        stop_bar_wb=intersection_stop_bar_wb,
+    )
 
     test_nb_approach_point = geopy.Point(37.791640829945806, -122.4090598924283)
     test_eb_approach_point = geopy.Point(37.79191109041387, -122.41001431676943)
