@@ -1,6 +1,7 @@
 import unittest
 from ssoss.static_road_object import *
-import geopy, geopy.distance
+import geopy
+import geopy.distance
 
 
 class TestGetIDNumMethod(unittest.TestCase):
