@@ -20,7 +20,15 @@ from ssoss.static_road_object import Intersection, StaticRoadObject
 
 class DynamicRoadObject:
 
-    def __init__(self, id_num, name, obj_type, sro_df, gpx_df, source="GPX"):
+    def __init__(
+        self,
+        id_num: int,
+        name: str,
+        obj_type: str,
+        sro_df: pd.DataFrame,
+        gpx_df: pd.DataFrame,
+        source: str = "GPX",
+    ) -> None:
         """Dynamic Road Objects move through time and space using a source (typ. GPX)
 
         :param id_num: unique ID number for object
@@ -73,7 +81,7 @@ class DynamicRoadObject:
     def mask(df, key, value) -> pd.DataFrame:
         return df[df[key] == value]
 
-    def update_location_simple(self, i=2):
+    def update_location_simple(self, i: int = 2) -> None:
         """ Update dynamic object location with new data point i
         """
         self.t0 = self.t1
@@ -98,7 +106,7 @@ class DynamicRoadObject:
         t = datetime.fromisoformat(str(self.t1))
         return pd.Timestamp(t)
 
-    def first_utc_timestamp(self):
+    def first_utc_timestamp(self) -> float:
         t = self.t0.timetuple()
         return time.mktime(t) - 28800
 
@@ -111,17 +119,17 @@ class DynamicRoadObject:
         return time.mktime(t) - 28800
 
     @staticmethod
-    def utc_to_timestamp(t):
+    def utc_to_timestamp(t: float) -> str:
         return time.asctime(time.localtime(t))
 
-    def get_time_step(self):
+    def get_time_step(self) -> float:
         time_step = self.t1 - self.t0
         if time_step.total_seconds() < 0:
             return 10.0  # assume larger first gpx point time step
         else:
             return time_step.total_seconds()
 
-    def get_location(self, i=None, elev=False):
+    def get_location(self, i: int | None = None, elev: bool = False) -> str:
         if elev:
             if i is None:
                 return self.pnt1.format_decimal()
@@ -498,11 +506,11 @@ class DynamicRoadObject:
         )
 
     @staticmethod
-    def find_index(df, i):
+    def find_index(df: pd.DataFrame, i: int) -> pd.Series:
         return df.iloc[i]
 
     @staticmethod
-    def t_spd_adjust(d0, spd0, d1, spd1):
+    def t_spd_adjust(d0: float, spd0: float, d1: float, spd1: float) -> float:
         """ Adjusts time of event based on speed of gpx points i and i+1.
 
         :param d0: distance a t=0
