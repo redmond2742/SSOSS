@@ -25,7 +25,8 @@ class ProcessRoadObjects:
     def __init__(self,
                  gpx_filestring: str = "",
                  #signals_filestring: str = "",
-                 generic_static_object_filestring: str = ""
+                 generic_static_object_filestring: str = "",
+                 use_pickle: bool = True
                  ):
         """ Class to process Road Object files. Using January 1st 1970 as time epoc
 
@@ -66,6 +67,9 @@ class ProcessRoadObjects:
         self.intersection_approaches = 0
         self.generic_so_approaches = 0
 
+        # store whether to load/save pickled GPX data
+        self.use_pickle = use_pickle
+
         # scafold directory structure if not present
         gpx_video_dir = self.in_gpx_dir_path
         p = Path(str(gpx_video_dir))
@@ -90,7 +94,7 @@ class ProcessRoadObjects:
             else:
                 raise ValueError("generic static object .csv file must have 7, 13 or 29 columns. Check documentation.")
         if self.gpx_filename:
-            gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=False)
+            gpx_df = self.load_gpx_to_obj_df(self.gpx_filename, use_pickle=self.use_pickle)
 
 
     @staticmethod
@@ -331,10 +335,16 @@ class ProcessRoadObjects:
         t1 = datetime.now(timezone.utc)
 
         if use_pickle and Path(self.pickle_file).is_file():
-            self.gpxDF = pd.read_pickle(self.pickle_file)
+            self.gpx_listDF = pd.read_pickle(self.pickle_file)
             print(
-                f"Loaded Pickle file {self.pickle_file} into Dataframe with {self.gpxDF.last_valid_index()} rows"
+                f"Loaded Pickle file {self.pickle_file} into Dataframe with {self.gpx_listDF.last_valid_index()} rows"
             )
+            if self.intersection_listDF is not None:
+                self.update_gpx_points(so_type="intersection")
+            if self.generic_so_listDF is not None:
+                self.update_gpx_points(so_type="generic_so")
+            self.gpx_summary()
+            return self.gpx_listDF
         else:
             print(
                 f"Using GPX file: {self.gpx_file}"
@@ -391,8 +401,9 @@ class ProcessRoadObjects:
                     pt_count += 1
 
         self.gpx_listDF = pd.DataFrame(gpx_load)
-        #self.gpx_listDF.to_pickle(self.pickle_file)
-        #self.gpx_listDF.to_csv(self.csv_file)
+        if use_pickle:
+            self.gpx_listDF.to_pickle(self.pickle_file)
+            self.gpx_listDF.to_csv(self.csv_file)
         print(
             f"Processing {pt_count} points of GPX file."
         )
