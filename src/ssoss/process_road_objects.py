@@ -149,7 +149,7 @@ class ProcessRoadObjects:
         i_id = sro_id
         i_bearing = b_index
         i_compass_bearing = i_obj.get_bearing_str(b_index)
-        i_name = i_obj.get_name()
+        i_name = i_obj.get_name().replace("+", "-")
         i_name_one = i_obj.get_name(0)
         i_name_two = i_obj.get_name(1)
         i_sd = i_obj.get_sd(b_index)
