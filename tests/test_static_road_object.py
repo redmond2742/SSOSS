@@ -28,6 +28,11 @@ class TestGetIDNumMethod(unittest.TestCase):
         expected_value = 100
         self.assertEqual(self.sro_id_result, expected_value)
 
+    def test_get_sd_returns_first_value(self):
+        # the dictionary is ordered so the first value corresponds to key -999
+        # which is expected to return 0
+        self.assertEqual(self.test_sro.get_sd(), 0)
+
 
 class TestDistanceToSB(unittest.TestCase):
     intersection_name = tuple(("California", "Powell"))

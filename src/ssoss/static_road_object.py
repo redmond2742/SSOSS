@@ -39,7 +39,16 @@ class StaticRoadObject:
         return self.obj_type
 
     def get_sd(self):
-        return self.spd_sd.values()[0]  # first/only distance (feet) to have clear view of static object.
+        """Return the first sight distance value in ``spd_sd``.
+
+        ``spd_sd`` is stored as a dictionary mapping speed to sight
+        distance.  Prior to Python 3, ``dict.values()`` returned a list and
+        indexing worked.  In Python 3 it returns a ``dict_values`` view which
+        is not subscriptable.  Using ``next(iter(...))`` provides the first
+        value without relying on list conversion.
+        """
+
+        return next(iter(self.spd_sd.values()))
 
 class GenericStaticObject():
     def __init__(self, id_num: int, street_name: str, pt: geopy.Point, bearing, description:str, distance_ft: float ):
