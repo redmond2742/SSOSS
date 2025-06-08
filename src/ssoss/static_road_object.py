@@ -2,29 +2,28 @@
 # coding: utf-8
 
 import math
-import geopy, geopy.distance
+from dataclasses import dataclass, field
+from typing import Tuple, Union
+
+import geopy
+import geopy.distance
 import numpy as np
 
 
+@dataclass
 class StaticRoadObject:
+    """Base representation of a static object on the roadway."""
 
-    def __init__(self, id_num: int, name: str, obj_type: type,
-                 ctr_pt: geopy.Point, spd_sd: dict):
-        """initializes values related to static road objects
+    id_num: int
+    name: Union[str, Tuple[str, str]]
+    ctr_pt: geopy.Point
+    spd_sd: dict = field(default_factory=dict, kw_only=True)
+    obj_type: type = field(init=False)
+    pt: geopy.Point = field(init=False)
 
-        :param id_num: Identification number (int)
-        :param name: name of street object is located on
-        :param obj_type: type of static object, ie. sign, intersection, generic_so, etc.
-        :param ctr_pt: Geopy Point object of lat, lon, altitude
-        :param spd_sd: speed [key] and sight distance[value] of object to be viewed (distance in ft)
-        """
-
-        self.id_num = id_num
-        self.name = name
-        self.obj_type = obj_type
-        self.ctr_pt = ctr_pt
-        self.pt = geopy.Point(ctr_pt.latitude, ctr_pt.longitude)  # removes elevation for dist calcs
-        self.spd_sd = spd_sd
+    def __post_init__(self) -> None:
+        self.obj_type = type(self)
+        self.pt = geopy.Point(self.ctr_pt.latitude, self.ctr_pt.longitude)
 
     def get_id_num(self) -> int:
         return int(self.id_num)
@@ -50,28 +49,25 @@ class StaticRoadObject:
 
         return next(iter(self.spd_sd.values()))
 
-class GenericStaticObject():
-    def __init__(self, id_num: int, street_name: str, pt: geopy.Point, bearing, description:str, distance_ft: float ):
-        """ Class for any type of static object. Point and Visible Distance are primary inputs
-         
-        """
+@dataclass
+class GenericStaticObject:
+    """Generic static object such as a sign or road marking."""
 
-        self.id_num = id_num
-        self.street_name = street_name
-        self.pt = geopy.Point(pt.latitude, pt.longitude)  # removes elevation for dist calcs
-        self.description = description
-        self.distance_ft = distance_ft
-        
-        compass = {"NB":0,
-                   "EB":90,
-                   "SB":180,
-                   "WB":270
-                   }
+    id_num: int
+    street_name: str
+    pt: geopy.Point
+    bearing: Union[str, float]
+    description: str
+    distance_ft: float
 
-        if type(bearing) == str:
-            self.bearing = compass[bearing]
+    def __post_init__(self) -> None:
+        self.pt = geopy.Point(self.pt.latitude, self.pt.longitude)
+
+        compass = {"NB": 0, "EB": 90, "SB": 180, "WB": 270}
+        if isinstance(self.bearing, str):
+            self.bearing = compass[self.bearing]
         else:
-            self.bearing = bearing
+            self.bearing = float(self.bearing)
 
 
     def get_id_num(self) -> int:
@@ -131,40 +127,39 @@ class TrafficControlSign(StaticRoadObject):
     pass
 
 
+@dataclass
 class Intersection(StaticRoadObject):
-    """Extends Static Road Objects with additional variables and methods related to intersection objects
-    """
+    """Static road object representing an intersection."""
 
-    def __init__(self,
-                 id_num,
-                 name: tuple,
-                 ctr_pnt: geopy.Point,
-                 spd: tuple,
-                 bearing: tuple,
-                 stop_bar_nb=(0, 0),
-                 stop_bar_eb=(0, 0),
-                 stop_bar_sb=(0, 0),
-                 stop_bar_wb=(0, 0)):
-        """initialize variables of intersection class, mostly stored as tuples in (North, East, South, West) format
+    spd: Tuple[int, int, int, int]
+    bearing: Tuple[float, float, float, float]
+    stop_bar_nb: Tuple[geopy.Point, geopy.Point] = (
+        geopy.Point(0, 0),
+        geopy.Point(0, 0),
+    )
+    stop_bar_eb: Tuple[geopy.Point, geopy.Point] = (
+        geopy.Point(0, 0),
+        geopy.Point(0, 0),
+    )
+    stop_bar_sb: Tuple[geopy.Point, geopy.Point] = (
+        geopy.Point(0, 0),
+        geopy.Point(0, 0),
+    )
+    stop_bar_wb: Tuple[geopy.Point, geopy.Point] = (
+        geopy.Point(0, 0),
+        geopy.Point(0, 0),
+    )
 
-        :param id_num:
-        :param name: tuple of the name of two streets intersecting ((N/S, E/W))
-        :param ctr_pnt: center lat, lon of intersection as geopy.Point object
-        :param spd: tuple of posted speed limit values for each approach ((N,E,S,W))
-        :param bearing: tuple of compass bearing for each approach ((N,E,S,W))
-        :param stop_bar_nb: tuple of two geopy Points (both with (lat,lon)) for NB approach stop bar*
-        :param stop_bar_eb: tuple of two geopy Points (both with (lat,lon)) for EB approach stop bar*
-        :param stop_bar_sb: tuple of two geopy Points (both with (lat,lon)) for SB approach stop bar*
-        :param stop_bar_wb: tuple of two geopy Points (both with (lat,lon)) for WB approach stop bar*
+    stop_bar_bools: Tuple[bool, bool, bool, bool] = field(init=False)
+    sd: Tuple[float, float, float, float] = field(init=False)
+    stop_bar_d: Tuple[
+        Tuple[geopy.Point, geopy.Point],
+        Tuple[geopy.Point, geopy.Point],
+        Tuple[geopy.Point, geopy.Point],
+        Tuple[geopy.Point, geopy.Point],
+    ] = field(init=False)
 
-        *Note: left point (inside lane) is [0] in tuple, right point (right turn lane) is [1] in tuple
-
-        """
-
-        self.stop_bar_bools = tuple((False,False,False,False))  
-        self.spd = spd
-        self.ctr_pnt = ctr_pnt
-        self.bearing = bearing
+    def __post_init__(self) -> None:
         self.spd_sd = {
             -999: 0,
             20: 175,
@@ -175,21 +170,25 @@ class Intersection(StaticRoadObject):
             45: 460,
             50: 540,
             55: 625,
-            60: 715
+            60: 715,
         }
-        #  default to lowest distance if speed not found in spd_sd dict.
-        self.sd = tuple((self.spd_sd.get(self.spd[0], 175),
-                         self.spd_sd.get(self.spd[1], 175),
-                         self.spd_sd.get(self.spd[2], 175),
-                         self.spd_sd.get(self.spd[3], 175),
-                         ))
 
-        self.stop_bar_d = tuple((stop_bar_nb, stop_bar_eb,
-                                 stop_bar_sb, stop_bar_wb
-                                 ))
+        self.sd = (
+            self.spd_sd.get(self.spd[0], 175),
+            self.spd_sd.get(self.spd[1], 175),
+            self.spd_sd.get(self.spd[2], 175),
+            self.spd_sd.get(self.spd[3], 175),
+        )
 
-        StaticRoadObject.__init__(self, id_num, name, Intersection, ctr_pnt,
-                                  self.spd_sd)
+        self.stop_bar_bools = (False, False, False, False)
+        self.stop_bar_d = (
+            self.stop_bar_nb,
+            self.stop_bar_eb,
+            self.stop_bar_sb,
+            self.stop_bar_wb,
+        )
+
+        super().__post_init__()
 
     # TODO: Convert this to dictionary from input file, not hard coded values
     # @staticmethod
