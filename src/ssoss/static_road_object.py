@@ -2,7 +2,8 @@
 # coding: utf-8
 
 import math
-import geopy, geopy.distance
+import geopy
+import geopy.distance
 import numpy as np
 
 
@@ -68,7 +69,7 @@ class GenericStaticObject():
                    "WB":270
                    }
 
-        if type(bearing) == str:
+        if isinstance(bearing, str):
             self.bearing = compass[bearing]
         else:
             self.bearing = bearing

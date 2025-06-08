@@ -1,12 +1,14 @@
 # !/usr/bin/env python
 # coding: utf-8
 
-import csv, math
-from datetime import datetime, timezone
+import csv
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 import geopy
-from geopy.distance import geodesic, Distance
+from geopy.distance import geodesic
+from geopy.distance import Distance
 
 import gpxpy
 import gpxpy.gpx
@@ -16,7 +18,8 @@ import lxml
 from lxml import etree
 from tqdm import tqdm
 
-from ssoss.static_road_object import Intersection, GenericStaticObject
+from ssoss.static_road_object import Intersection
+from ssoss.static_road_object import GenericStaticObject
 from ssoss.motion_road_object import GPXPoint
 
 

@@ -1,9 +1,8 @@
 import argparse
-from gooey import Gooey, GooeyParser
+from gooey import Gooey
+from gooey import GooeyParser
 from ssoss_cli import *
 
-import process_road_objects
-import process_video
 
 
 @Gooey(program_name="Safe Sightings of Signs and Signals") #  , tabbed_groups=True

@@ -15,7 +15,8 @@ import gpxpy.geo as gpxgeo
 import numpy as np
 import pandas as pd
 
-from ssoss.static_road_object import Intersection, StaticRoadObject
+from ssoss.static_road_object import Intersection
+from ssoss.static_road_object import StaticRoadObject
 
 
 class DynamicRoadObject:
@@ -253,12 +254,12 @@ class DynamicRoadObject:
         if df is None:
             return None
         else:
-            mask = df['approaching'].values == True
+            mask = df['approaching'].values
             if df[mask].empty:
                 return None
             elif as_list:
                 return df[mask]
-            elif as_list == False:
+            elif not as_list:
                 return df[mask].iloc[0, 1]
 
     def calc_bearing_diff(self, m: float) -> float:
@@ -563,10 +564,12 @@ class DynamicRoadObject:
                         (gpx_df.time_delta.iloc[i] * (gpx_df.spd.iloc[i] * self.MPHtoFTPS)):
                 print("heuristic filter")
 
-                if (gpx_df.approaching.iloc[i - 1]) == True and \
-                        (gpx_df.approaching.iloc[i]) == True and \
-                        (gpx_df.approaching.iloc[i + 1] == False) and \
-                        (gpx_df.approaching.iloc[i + 2] == False):
+                if (
+                    gpx_df.approaching.iloc[i - 1]
+                    and gpx_df.approaching.iloc[i]
+                    and not gpx_df.approaching.iloc[i + 1]
+                    and not gpx_df.approaching.iloc[i + 2]
+                ):
 
                     print("approach filter")
 
@@ -626,11 +629,11 @@ class DynamicRoadObject:
         for i in range(1, (gpx_df.last_valid_index() - 3)):
             if self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).distance_from_sb(
                     gpx_df.location.iloc[i + 1], gpx_df.appr_dir.iloc[i + 1]) is None:
-                print(f'USING CENTER OF INTERSECTION LOCATION')
+                print('USING CENTER OF INTERSECTION LOCATION')
                 approach_distance = self.get_itrsxn_obj_by_id(
                     gpx_df.id.iloc[i]).get_sd(gpx_df.appr_dir.iloc[i + 1]) + 50
             else:
-                print(f'USING STOP BAR LOCATION')
+                print('USING STOP BAR LOCATION')
                 approach_distance = self.get_itrsxn_obj_by_id(
                     gpx_df.id.iloc[i]).distance_from_sb(gpx_df.location.iloc[i + 1],
                                                         gpx_df.appr_dir.iloc[i + 1])

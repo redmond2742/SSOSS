@@ -1,10 +1,9 @@
 # !/usr/bin/env python
 # coding: utf-8
 import math
-from datetime import datetime, timezone
-from datetime import timedelta
-from operator import attrgetter, itemgetter
-from pathlib import PurePath
+from datetime import datetime
+from datetime import timezone
+from operator import itemgetter
 
 import dateutil
 import geopy
@@ -12,7 +11,8 @@ import gpxpy.geo as gpxgeo
 import numpy as np
 import pandas as pd
 
-from ssoss.static_road_object import StaticRoadObject, Intersection
+from ssoss.static_road_object import StaticRoadObject
+from ssoss.static_road_object import Intersection
 
 
 
@@ -345,7 +345,7 @@ class GPXPoint:
             only_approaching_generic_so = filter(lambda x: x[2] is True, temp_sort_approaching)  # filter out generic_so not approached
             self.generic_so_approach_list = list(only_approaching_generic_so)
 
-        return;
+        return
 
     def three_pt_approach(self,d0, d1, d2, approach_distance) -> bool:
         """ check if d0 & d1 points are before approach distance and d2 is after"""
