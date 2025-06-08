@@ -1,5 +1,10 @@
+import sys
+import pathlib
 import unittest
-from ssoss.static_road_object import *
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
+
+from ssoss.static_road_object import StaticRoadObject, Intersection
 import geopy, geopy.distance
 
 
