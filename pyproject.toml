@@ -25,3 +25,6 @@ files = ["requirements.txt"]
 [project.urls]
 "Homepage" = "https://github.com/redmond2742/ssoss"
 "Bug Tracker" = "https://github.com/redmond2742/ssoss/issues"
+
+[project.scripts]
+ssoss = "ssoss.ssoss_cli:main"
