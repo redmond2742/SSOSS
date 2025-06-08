@@ -166,47 +166,54 @@ class ProcessVideo:
         image_path.mkdir(exist_ok=True, parents=True)
 
         capture = cv2.VideoCapture(str(self.video_filepath))
-        frame_count = self.get_frame_count()
-
-        i = 0  # index for all frames to extract
-        j = 0  # index for frames list to extract as image
-        k = 0  # intersection string description counter
-
-        while capture.isOpened() and len(extract_frames) > 0 and i < frame_count:
-
-            for current_frame in tqdm(range(0, extract_frames[-1]),
-                          desc="Frame Search",
-                          unit=" Frames"):
-                ret, frame = capture.read()
-                if ret is False:
-                    print("ERROR: ret is FALSE on OpenCV image")
-                    break
-                if i == extract_frames[j] and j <= len(extract_frames)-1:
-                    frame_name = str(intersection_desc[j]) + '.jpg'
-                    frame_filepath = image_path / frame_name
-                    cv2.imwrite(str(frame_filepath), frame)
-                    print(
-                        f'PICTURE CAPTURED AT {extract_frames[j]}: {intersection_desc[j]}, Saved {j + 1} picture(s) of {len(extract_frames)}')
-                    j += 1
-                    k += 1
-                if j == len(extract_frames):
-                    print("done processing images")
-                    capture.release()
-                    break
-                i += 1
-            if i > extract_frames[-1]:
-                break
-        capture.release()
+        self.extract_frames_to_images(capture, extract_frames, intersection_desc, image_path)
 
         if label_img:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
-        """
-        if bbox:
-        self.img_overlay_bbox(description_list,project)
-    
-        """    
+
+    def extract_frames_to_images(self, capture, extract_frames, intersection_desc, image_path):
+        """Loop through frames and save requested images."""
+
+        if not extract_frames:
+            capture.release()
+            return
+
+        j = 0
+        last_frame = extract_frames[-1]
+        for i in tqdm(range(0, last_frame + 1), desc="Frame Search", unit=" frame"):
+            if not capture.isOpened() or i >= self.get_frame_count():
+                break
+            ret, frame = capture.read()
+            if not ret:
+                print("ERROR: ret is FALSE on OpenCV image")
+                break
+            if i == extract_frames[j]:
+                self.save_single_frame(frame, intersection_desc[j], image_path, i, j, len(extract_frames))
+                j += 1
+                if j == len(extract_frames):
+                    print("done processing images")
+                    break
+        capture.release()
+
+    def save_single_frame(
+        self,
+        frame,
+        description: str,
+        image_path: Path,
+        frame_idx: int,
+        count: int,
+        total: int,
+    ) -> None:
+        """Save a single frame to ``image_path`` and log progress."""
+
+        frame_name = f"{description}.jpg"
+        frame_filepath = image_path / frame_name
+        cv2.imwrite(str(frame_filepath), frame)
+        print(
+            f"PICTURE CAPTURED AT {frame_idx}: {description}, Saved {count + 1} picture(s) of {total}"
+        )
      
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
