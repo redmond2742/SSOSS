@@ -23,7 +23,7 @@ class ProcessVideo:
         :param in_dir_path: filename of video to be processed (include video extension (.mov, .mp4, etc)
         """
 
-        self.DATE_FORMAT = "%m-%d-%Y--%H-%M-%S.%f-%Z"  # ISO 8601 format
+        self.DATE_FORMAT = '%m-%d-%Y--%H-%M-%S.%f-%Z'  #ISO 8601 format
         self.video_dir = Path(video_filestring).parents[0]
         self.video_filepath = Path(video_filestring)
         self.video_filename = Path(video_filestring).name
@@ -35,6 +35,7 @@ class ProcessVideo:
         self.duration = self.get_duration()
         self.start_time = 0
         self.capture = ""
+
 
         self.vid_summary(vid_summary=True)
 
@@ -70,17 +71,15 @@ class ProcessVideo:
             appends frame # and timestamp to sync.txt with video filename for reference
         """
         sync_txt_folder = Path(self.video_dir, "out")
-        sync_file = str(sync_txt_folder) + "/" + "sync.txt"
-        with open(sync_file, "a") as f:
-            f.write(f"{self.video_filepath.stem},{frame},{ts}\n")
+        sync_file = str(sync_txt_folder) +"/"+ "sync.txt"
+        with open(sync_file, 'a') as f:
+            f.write(f'{self.video_filepath.stem},{frame},{ts}\n')
 
         elapsed_time = frame / self.fps
         if type(ts) is float:
             start_time = ts - elapsed_time
         else:
-            t_temp = dateutil.parser.isoparse(
-                ts
-            )  #  isoparse parses ISO-8601 datetime string into datetime.datetime
+            t_temp = (dateutil.parser.isoparse(ts))  #  isoparse parses ISO-8601 datetime string into datetime.datetime
             start_time = t_temp.replace(tzinfo=timezone.utc).timestamp() - elapsed_time
         self.set_start_utc(start_time)
         self.vid_summary(vid_summary=False, sync=True)
@@ -124,10 +123,8 @@ class ProcessVideo:
             str(output_path),
         ]
         subprocess.run(cmd, check=True)
-
-    def extract_generic_so_sightings(
-        self, desc_timestamps, project, label_img=True, gen_gif=False
-    ):
+    
+    def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
         extract generic sighting images from video based on description and timestamp zip
 
@@ -136,67 +133,60 @@ class ProcessVideo:
         """
 
         generic_so_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
-        image_path = Path(
-            self.video_dir,
-            "out",
-            self.video_filepath.stem,
-            "generic_static_object_sightings/",
-        )
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
         for desc, frame_num in tqdm(
-            list(zip(generic_so_desc, extract_frames)),
-            desc="Frame Extraction",
-            unit=" frame",
-        ):
-            frame_name = str(desc) + ".jpg"
+                list(zip(generic_so_desc, extract_frames)),
+                desc="Frame Extraction",
+                unit=" frame"):
+            frame_name = str(desc) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
             print(
-                f"PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}"
-            )
+                f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
         if label_img:
             self.generic_so_img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
 
-    def extract_sightings(
-        self, desc_timestamps, project, label_img=True, gen_gif=False
-    ):
-        """Extract sighting images from a video."""
+    def extract_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
+        """
+        extract sighting images from video based on description and timestamp zip
 
-        intersection_desc, extract_frames = self.create_pic_list_from_zip(
-            desc_timestamps
-        )
-        image_path = Path(
-            self.video_dir, "out", self.video_filepath.stem, "signal_sightings/"
-        )
+        desc_timestamps: sorted list of tuples (filename description, timestamp of sight distance)
+        project: instance of ProcessRoadObjects() class
+        """
+
+        intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
+        image_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        self._save_frames(intersection_desc, extract_frames, image_path)
+        for desc, frame_num in tqdm(
+                list(zip(intersection_desc, extract_frames)),
+                desc="Frame Extraction",
+                unit=" frame"):
+            frame_name = str(desc) + '.jpg'
+            frame_filepath = image_path / frame_name
+            self.save_frame_ffmpeg(frame_num, frame_filepath)
+            print(
+                f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {intersection_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
         if label_img:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
-
-    def _save_frames(self, descriptions, frames, image_path: Path) -> None:
-        """Save frames described by ``descriptions`` and ``frames`` to disk."""
-
-        for desc, frame_num in tqdm(
-            list(zip(descriptions, frames)), desc="Frame Extraction", unit=" frame"
-        ):
-            frame_name = str(desc) + ".jpg"
-            frame_filepath = image_path / frame_name
-            self.save_frame_ffmpeg(frame_num, frame_filepath)
-            print(
-                f"PICTURE CAPTURED AT {frame_num}: {desc}, Saved {descriptions.index(desc) + 1} picture(s) of {len(frames)}"
-            )
+        """
+        if bbox:
+        self.img_overlay_bbox(description_list,project)
+    
+        """    
+     
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
     def extract_frames_between(self, start_sec, end_sec):
-        """helper function to extract frames from video during a specific time period to estimate offset
+        """ helper function to extract frames from video during a specific time period to estimate offset
             between gpx and video
 
         :param start_sec: start time of video to extract image frames
@@ -236,10 +226,10 @@ class ProcessVideo:
         end_frame = int(self.get_fps() * end_sec)
 
         for i in range(start_frame, end_frame + 1):
-            frame_name = "Frame" + str(i) + ".jpg"
+            frame_name = 'Frame' + str(i) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(i, frame_filepath)
-            print(f"Saved Image {i} to {frame_filepath}")
+            print(f'Saved Image {i} to {frame_filepath}')
 
     def generate_gif(self, desc_timestamps, project, distance=100):
         """ creates a folder of images to create a gif
@@ -261,18 +251,10 @@ class ProcessVideo:
 
         intersection_desc, frame_list = self.create_pic_list_from_zip(desc_timestamps)
 
-        for i in tqdm(
-            range(0, len(desc_timestamps)),
-            desc="Generating Images for GIF",
-            unit=" Location",
-        ):
-            gif_basepath = (
-                self.video_dir
-                / "out"
-                / self.video_filepath.stem
-                / "gif"
-                / intersection_desc[i]
-            )
+        for i in tqdm(range(0, len(desc_timestamps)),
+                      desc="Generating Images for GIF",
+                      unit=" Location"):
+            gif_basepath = self.video_dir / "out" / self.video_filepath.stem / "gif" / intersection_desc[i]
             gif_path = Path(gif_basepath)
             gif_path.mkdir(exist_ok=True, parents=True)
 
@@ -297,60 +279,57 @@ class ProcessVideo:
                 frame_max = int(frame_list[i] + additional_frames)
 
             for j in range(frame_min, frame_max + 1):
-                frame_name = str(j) + "-" + intersection_desc[i] + ".jpg"
+                frame_name = str(j) + "-" + intersection_desc[i] + '.jpg'
                 frame_filepath = gif_path / frame_name
                 self.save_frame_ffmpeg(j, frame_filepath)
             i += 1
         self.assemble_gif()
 
     def assemble_gif(self):
-        # base_path = Path(self.video_dir, "out", self.video_filepath.stem, "gif/")
+        #base_path = Path(self.video_dir, "out", self.video_filepath.stem, "gif/")
         gif_files_path = self.video_dir / "out" / self.video_filepath.stem / "gif"
         base_path = Path(gif_files_path)
-        # base_path = "./out/frames/" + self.video_filename + "/gif/"
-        img_folders = sorted(base_path.glob("*"))
-        kargs = {"duration": 1 / 9999999999999999}
+        #base_path = "./out/frames/" + self.video_filename + "/gif/"
+        img_folders = sorted(base_path.glob('*'))
+        kargs = {'duration': 1/9999999999999999}
         for i in range(0, len(img_folders)):
             images = []
             img_folder = os.path.basename(img_folders[i])
-            frame_images = sorted(
-                glob.glob(os.path.join(base_path, img_folder + "/*.jpg"))
-            )
+            frame_images = sorted(glob.glob(os.path.join(base_path, img_folder + "/*.jpg")))
             for j in range(0, len(frame_images)):
                 if j % 5 == 0:
                     images.append(imageio.imread(frame_images[j]))
-            imageio.mimsave(
-                os.path.join(base_path, img_folder + ".gif"), images, **kargs
-            )
-            print(f"Created Gif: {img_folder}.gif")
+            imageio.mimsave(os.path.join(base_path, img_folder + ".gif"), images, **kargs)
+            print(f'Created Gif: {img_folder}.gif')
             #  TODO: delete folder of images after gif is created.
             #  TODO: overwite existing gif option
+
 
     @staticmethod
     def hr_min_sec(sec):
         if sec < 60:
-            return f"{sec} seconds"
+            return f'{sec} seconds'
         elif sec < 3600:
             minutes = int(sec / 60)
             sec_remain = round(sec - minutes * 60, 2)
-            return f"{minutes:02}:{sec_remain:05.2f} (MM:SS.ss)"
+            return f'{minutes:02}:{sec_remain:05.2f} (MM:SS.ss)'
         elif sec >= 3600:
             hr = int(sec / 3600)
             minutes = int(sec / 60)
             sec_remain = round(sec - minutes * 60, 2)
-            return f"{hr:02}:{minutes:02}:{sec_remain:05.2f} (HH:MM:SS.ss)"
+            return f'{hr:02}:{minutes:02}:{sec_remain:05.2f} (HH:MM:SS.ss)'
 
     def sizeConvert(self, size):
         # convert filesize to human readable format
-        K, M, G = 1024, 1024**2, 1024**3
+        K, M, G = 1024, 1024 ** 2, 1024 ** 3
         if size >= G:
-            return str(round(size / G, 2)) + " GB"
+            return str(round(size / G, 2)) + ' GB'
         elif size >= M:
-            return str(round(size / M, 2)) + " MB"
+            return str(round(size / M, 2)) + ' MB'
         elif size >= K:
-            return str(round(size / K, 2)) + " KB"
+            return str(round(size / K, 2)) + ' KB'
         else:
-            return str(round(size, 2)) + " Bytes"
+            return str(round(size, 2)) + ' Bytes'
 
     def get_filesize(self):
         # get the file size
@@ -396,21 +375,18 @@ class ProcessVideo:
         if sync:
             print(sync_time)
 
+
     @staticmethod
-    def find_font_scale(label, max_width=0, max_height=0):
+    def find_font_scale(label, max_width = 0, max_height = 0):
         font_scl = 0.2
-        textsize_x, textsize_y = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_PLAIN, font_scl, 1
-        )[0]
+        textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, font_scl, 1)[0]
         w_font_scl = h_font_scl = font_scl
         if max_width > 0:
             if textsize_x < max_width:
                 #  scale up scale in for loop
                 for scale_increment in np.arange(0, 10, 0.1):
                     w_font_scl = scale_increment
-                    textsize_x, textsize_y = cv2.getTextSize(
-                        label, cv2.FONT_HERSHEY_PLAIN, w_font_scl, 1
-                    )[0]
+                    textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, w_font_scl, 1)[0]
                     if textsize_x < max_width:
                         continue
                     else:
@@ -421,15 +397,13 @@ class ProcessVideo:
                 #  scale up scale in for loop
                 for scale_increment in np.arange(0, 10, 0.1):
                     h_font_scl = scale_increment
-                    textsize_x, textsize_y = cv2.getTextSize(
-                        label, cv2.FONT_HERSHEY_PLAIN, h_font_scl, 1
-                    )[0]
+                    textsize_x, textsize_y = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, h_font_scl, 1)[0]
                     if textsize_y < max_height:
                         continue
                     else:
                         h_font_scl = scale_increment - 0.5
                         break
-        if max_width > 0 and max_height > 0:
+        if max_width > 0  and max_height > 0:
             return min(w_font_scl, h_font_scl)
         else:
             return max(w_font_scl, h_font_scl)
@@ -445,14 +419,8 @@ class ProcessVideo:
             trunc_label = label[0:w]
         return start_x, trunc_label
 
-    def labels(
-        self,
-        img,
-        output_filename,
-        descriptive_label,
-        height_percent: tuple,
-        ssoss_and_descriptive=True,
-    ):
+            
+    def labels(self, img, output_filename, descriptive_label, height_percent:tuple, ssoss_and_descriptive = True ):
 
         alpha = 1  # Transparency factor.
         text_font = cv2.FONT_HERSHEY_PLAIN
@@ -468,14 +436,10 @@ class ProcessVideo:
         # calculated descriptive label dimensions
         descriptive_label_height = int(img_height * descriptive_label_percent)
         descriptive_label_y = img_height - descriptive_label_height
-        font_scale = self.find_font_scale(descriptive_label, max_width=img_width)
-        textsize_x, textsize_y = cv2.getTextSize(
-            descriptive_label, text_font, font_scale, font_thickness
-        )[0]
-        text_y = int((img_height - descriptive_label_height / 2.0) + textsize_y / 2.0)
-        text_x, descriptive_label = self.find_x_start_new_label(
-            textsize_x, img_width, descriptive_label
-        )
+        font_scale = self.find_font_scale(descriptive_label, max_width = img_width)
+        textsize_x, textsize_y = cv2.getTextSize(descriptive_label, text_font,  font_scale, font_thickness)[0]
+        text_y = int((img_height - descriptive_label_height/2.0)+textsize_y/2.0)
+        text_x, descriptive_label = self.find_x_start_new_label(textsize_x, img_width, descriptive_label)
 
         if ssoss_and_descriptive:
 
@@ -483,136 +447,65 @@ class ProcessVideo:
 
             # calculated ssoss_ad dimensions
             ssoss_label_height = int(img_height * ssoss_percent)
-            ssoss_label_font_scale = self.find_font_scale(
-                ssoss_label, max_height=ssoss_label_height
-            )
-            ssoss_label_textsize_x, ssoss_textsize_y = cv2.getTextSize(
-                ssoss_label, text_font, ssoss_label_font_scale, 1
-            )[0]
-
+            ssoss_label_font_scale = self.find_font_scale(ssoss_label, max_height = ssoss_label_height)
+            ssoss_label_textsize_x, ssoss_textsize_y = cv2.getTextSize(ssoss_label, text_font, ssoss_label_font_scale, 1)[0]
+            
             ssoss_label_text_x = int((img_width - ssoss_label_textsize_x) / 2.0)
             ssoss_label_text_y = int(img_height)
 
-            ssoss_text_x, fitted_ssoss_label = self.find_x_start_new_label(
-                ssoss_label_textsize_x, img_width, ssoss_label
-            )
+            ssoss_text_x, fitted_ssoss_label = self.find_x_start_new_label(ssoss_label_textsize_x, img_width, ssoss_label)
 
             # Calculated y-coordinates for different labels
-            ssoss_label_y = (
-                img_height - ssoss_label_height
-            )  # y-coordinate of top of ssoss ad
-            above_descriptive_and_ssoss_label_y = (
-                ssoss_label_y - descriptive_label_height
-            )  # y-coordinate of top of descriptive label
-            descriptive_and_ssoss_label_text_y = ssoss_label_y - int(textsize_y / 2.0)
+            ssoss_label_y = img_height - ssoss_label_height  # y-coordinate of top of ssoss ad
+            above_descriptive_and_ssoss_label_y = ssoss_label_y - descriptive_label_height # y-coordinate of top of descriptive label
+            descriptive_and_ssoss_label_text_y = ssoss_label_y - int(textsize_y/2.0)
 
-            # ssoss ad box
-            cv2.rectangle(
-                img_copy,
-                pt1=(0, img_height),
-                pt2=(img_width, ssoss_label_y),
-                color=BLACK,
-                thickness=-1,
-            )
-            ssoss_and_descriptive_label = cv2.addWeighted(
-                img_copy, alpha, img, 1 - alpha, 0
-            )
-            # image label box
-            cv2.rectangle(
-                img_copy,
-                pt1=(0, ssoss_label_y),
-                pt2=(img_width, above_descriptive_and_ssoss_label_y),
-                color=WHITE,
-                thickness=-1,
-            )
-            ssoss_and_descriptive_label = cv2.addWeighted(
-                img_copy, alpha, img, 1 - alpha, 0
-            )
+            #ssoss ad box
+            cv2.rectangle(img_copy,pt1=(0, img_height), pt2=(img_width, ssoss_label_y), color = BLACK, thickness=-1)
+            ssoss_and_descriptive_label = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
+            #image label box
+            cv2.rectangle(img_copy, pt1=(0, ssoss_label_y), pt2=(img_width, above_descriptive_and_ssoss_label_y), color=WHITE, thickness=-1)
+            ssoss_and_descriptive_label = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
             # text for ssoss ad and label
-            ssoss_and_descriptive_label = cv2.putText(
-                ssoss_and_descriptive_label,
-                descriptive_label,
-                (text_x, descriptive_and_ssoss_label_text_y),
-                text_font,
-                font_scale,
-                BLACK,
-                2,
-            )
-            ssoss_and_descriptive_label = cv2.putText(
-                ssoss_and_descriptive_label,
-                fitted_ssoss_label,
-                (ssoss_text_x, ssoss_label_text_y),
-                text_font,
-                ssoss_label_font_scale,
-                WHITE,
-                2,
-            )
+            ssoss_and_descriptive_label = cv2.putText(ssoss_and_descriptive_label, descriptive_label, (text_x, descriptive_and_ssoss_label_text_y), text_font, font_scale, BLACK, 2)
+            ssoss_and_descriptive_label = cv2.putText(ssoss_and_descriptive_label, fitted_ssoss_label, (ssoss_text_x, ssoss_label_text_y), text_font, ssoss_label_font_scale, WHITE, 2)
             # save image
             cv2.imwrite(output_filename, ssoss_and_descriptive_label)
-
+        
         else:
             # no ssoss label, just descriptive label (not recommended)
-            cv2.rectangle(
-                img_copy,
-                pt1=(0, img_height),
-                pt2=(img_width, descriptive_label_y),
-                color=WHITE,
-                thickness=-1,
-            )
-            img_new = cv2.addWeighted(img_copy, alpha, img, 1 - alpha, 0)
-            cv2.putText(
-                img_new,
-                descriptive_label,
-                (text_x, text_y),
-                text_font,
-                font_scale,
-                BLACK,
-                2,
-            )
+            cv2.rectangle(img_copy, pt1=(0, img_height), pt2=(img_width, descriptive_label_y), color=WHITE, thickness=-1)
+            img_new = cv2.addWeighted(img_copy, alpha, img, 1-alpha, 0)
+            cv2.putText(img_new, descriptive_label, (text_x, text_y), text_font, font_scale, BLACK, 2)
             cv2.imwrite(output_filename, img_new)
 
     @staticmethod
-    def generate_descriptive_label(
-        path, fn, road_object_info, static_object_type="generic"
-    ):
+    def generate_descriptive_label(path, fn, road_object_info, static_object_type="generic"):
         sro_id = int(fn.split(".")[0])
         ts = float(fn.split("-")[-1].replace(".jpg", ""))
         distance = 0
         if static_object_type == "intersection":
             b_index = int((fn.rsplit(".")[1])[0:1])
-            descriptive_label = road_object_info.intersection_frame_description(
-                sro_id, b_index, distance, ts, desc_type="label"
-            )
+            descriptive_label = road_object_info.intersection_frame_description(sro_id, b_index, distance, ts, desc_type="label")
         else:
-            descriptive_label = road_object_info.generic_so_description(
-                sro_id, distance, ts, desc_type="label"
-            )
+            descriptive_label = road_object_info.generic_so_description(sro_id, distance, ts, desc_type="label")
         return descriptive_label
-
+    
     def generic_so_img_overlay_info_box(self, vid_filename_dir, ro_info):
-        img_path = Path(
-            self.video_dir,
-            "out",
-            self.video_filepath.stem,
-            "generic_static_object_sightings/",
-        )
+        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         label_img_path = Path(img_path, "labeled/")
         os.makedirs(label_img_path, exist_ok=True)
 
         img_dir_string = str(img_path)
         label_img_dir_string = str(label_img_path)
-        pattern_criteria = ["*.jpg", "[!.]*"]
+        pattern_criteria = ['*.jpg','[!.]*']
 
-        descriptive_label_percent = 0.05  # 5% for descriptive label at bottom of image
-        ssoss_label_percent = (
-            0.02  #  2% for ssoss advertisement label at very bottom of image
-        )
+        descriptive_label_percent = 0.05 # 5% for descriptive label at bottom of image
+        ssoss_label_percent = 0.02 #  2% for ssoss advertisement label at very bottom of image
         label_height_percents = (descriptive_label_percent, ssoss_label_percent)
 
         #  filter for images where * is wildcard and don't include hidden (.*) files
-        pathlist = [
-            f for f in Path(img_dir_string).rglob("*.jpg") if not str(f).startswith(".")
-        ]
+        pathlist = [f for f in Path(img_dir_string).rglob('*.jpg') if not str(f).startswith(".")]
         for file in pathlist:
             if not str(file.stem).startswith("."):
                 filename = str(Path(file).name)
@@ -621,37 +514,26 @@ class ProcessVideo:
                 overlay = img.copy()
 
                 label_img_name = str(Path(label_img_path, filename))
-                descriptive_label = self.generate_descriptive_label(
-                    label_img_path, filename, ro_info
-                )
+                descriptive_label = self.generate_descriptive_label(label_img_path, filename, ro_info)
 
-                self.labels(
-                    img, label_img_name, descriptive_label, label_height_percents
-                )
+                self.labels(img, label_img_name, descriptive_label, label_height_percents)
+           
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
-        img_path = Path(
-            self.video_dir, "out", self.video_filepath.stem, "signal_sightings/"
-        )
+        img_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         label_img_path = Path(img_path, "labeled/")
         os.makedirs(label_img_path, exist_ok=True)
 
         img_dir_string = str(img_path)
         label_img_dir_string = str(label_img_path)
-        pattern_criteria = ["*.[0-3]-*.jpg", "[!.]*"]
+        pattern_criteria = ['*.[0-3]-*.jpg','[!.]*']
 
-        descriptive_label_percent = 0.05  # 5% for descriptive label at bottom of image
-        ssoss_label_percent = (
-            0.02  #  2% for ssoss advertisement label at very bottom of image
-        )
+        descriptive_label_percent = 0.05 # 5% for descriptive label at bottom of image
+        ssoss_label_percent = 0.02 #  2% for ssoss advertisement label at very bottom of image
         label_height_percents = (descriptive_label_percent, ssoss_label_percent)
 
         #  filter for images where * is wildcard and don't include hidden (.*) files
-        pathlist = [
-            f
-            for f in Path(img_dir_string).rglob("*.[0-3]-*.jpg")
-            if not str(f).startswith(".")
-        ]
+        pathlist = [f for f in Path(img_dir_string).rglob('*.[0-3]-*.jpg') if not str(f).startswith(".")]
         for file in pathlist:
             if not str(file.stem).startswith("."):
                 filename = str(Path(file).name)
@@ -660,10 +542,6 @@ class ProcessVideo:
                 overlay = img.copy()
 
                 label_img_name = str(Path(label_img_path, filename))
-                descriptive_label = self.generate_descriptive_label(
-                    label_img_path, filename, ro_info, static_object_type="intersection"
-                )
+                descriptive_label = self.generate_descriptive_label(label_img_path, filename,ro_info, static_object_type="intersection")
 
-                self.labels(
-                    img, label_img_name, descriptive_label, label_height_percents
-                )
+                self.labels(img, label_img_name, descriptive_label, label_height_percents)
