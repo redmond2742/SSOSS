@@ -11,8 +11,6 @@ import numpy as np
 from tqdm import tqdm
 import cv2
 import imageio
-from PIL import Image
-import piexif
 
 
 class ProcessVideo:
@@ -125,38 +123,6 @@ class ProcessVideo:
             str(output_path),
         ]
         subprocess.run(cmd, check=True)
-
-    @staticmethod
-    def _deg_to_dms_rational(value: float):
-        """Helper to convert decimal degrees to EXIF rational format."""
-        abs_value = abs(value)
-        deg = int(abs_value)
-        min_float = (abs_value - deg) * 60
-        minute = int(min_float)
-        sec = round((min_float - minute) * 60 * 1000000)
-        return ((deg, 1), (minute, 1), (sec, 1000000))
-
-    @staticmethod
-    def write_gps_exif(image_path: Path, latitude: float, longitude: float) -> None:
-        """Write GPS latitude and longitude EXIF tags to ``image_path``."""
-        img = Image.open(image_path)
-        lat_ref = "N" if latitude >= 0 else "S"
-        lon_ref = "E" if longitude >= 0 else "W"
-        gps_ifd = {
-            piexif.GPSIFD.GPSLatitudeRef: lat_ref,
-            piexif.GPSIFD.GPSLatitude: ProcessVideo._deg_to_dms_rational(latitude),
-            piexif.GPSIFD.GPSLongitudeRef: lon_ref,
-            piexif.GPSIFD.GPSLongitude: ProcessVideo._deg_to_dms_rational(longitude),
-        }
-
-        try:
-            exif_dict = piexif.load(img.info.get("exif", b""))
-        except Exception:
-            exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
-        exif_dict.setdefault("GPS", {}).update(gps_ifd)
-        exif_bytes = piexif.dump(exif_dict)
-        piexif.insert(exif_bytes, str(image_path))
-        img.close()
     
     def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
@@ -177,10 +143,6 @@ class ProcessVideo:
             frame_name = str(desc) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
-            ts = float(desc.split('-')[-1])
-            location = project.get_location_at_timestamp(ts)
-            if location is not None:
-                self.write_gps_exif(frame_filepath, location.latitude, location.longitude)
             print(
                 f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
@@ -208,10 +170,6 @@ class ProcessVideo:
             frame_name = str(desc) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
-            ts = float(desc.split('-')[-1])
-            location = project.get_location_at_timestamp(ts)
-            if location is not None:
-                self.write_gps_exif(frame_filepath, location.latitude, location.longitude)
             print(
                 f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {intersection_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
