@@ -677,6 +677,36 @@ class ProcessRoadObjects:
                 break
         return speed
 
+    def get_location_at_timestamp(self, ts):
+        """Return interpolated :class:`geopy.Point` for a timestamp."""
+
+        point_list = self.gpx_listDF
+        last_point = len(point_list) - 1
+
+        if ts < point_list.loc[0][0].get_timestamp():
+            return None
+        if ts > point_list.loc[last_point][0].get_timestamp():
+            return None
+
+        for i in range(len(point_list) - 1):
+            p_curr = point_list.loc[i][0]
+            p_next = point_list.loc[i + 1][0]
+            t0 = p_curr.get_timestamp()
+            t1 = p_next.get_timestamp()
+            if t0 <= ts <= t1:
+                if t1 == t0:
+                    return p_curr.get_location()
+                ratio = (ts - t0) / (t1 - t0)
+                lat = p_curr.get_location().latitude + ratio * (
+                    p_next.get_location().latitude - p_curr.get_location().latitude
+                )
+                lon = p_curr.get_location().longitude + ratio * (
+                    p_next.get_location().longitude - p_curr.get_location().longitude
+                )
+                return geopy.Point(lat, lon)
+
+        return None
+
 
 
 
