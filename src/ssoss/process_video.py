@@ -349,8 +349,8 @@ class ProcessVideo:
             return f'{minutes:02}:{sec_remain:05.2f} (MM:SS.ss)'
         elif sec >= 3600:
             hr = int(sec / 3600)
-            minutes = int(sec / 60)
-            sec_remain = round(sec - minutes * 60, 2)
+            minutes = int((sec - hr * 3600) / 60)
+            sec_remain = round(sec - (hr * 3600 + minutes * 60), 2)
             return f'{hr:02}:{minutes:02}:{sec_remain:05.2f} (HH:MM:SS.ss)'
 
     def sizeConvert(self, size):
