@@ -41,9 +41,9 @@ class DynamicRoadObject:
 
         self.MStoMPH = 2.23694
         self.FTPStoMPH = 0.681818
-        self.MPHtoFTPS = 1 / self.FTPStoMPH
+        self.MPHtoFTPS = 1/self.FTPStoMPH
         self.MStoFTPS = self.MStoMPH * self.MPHtoFTPS
-        self.DATE_FORMAT = "%m-%d-%Y--%H-%M-%S.%f-%Z"
+        self.DATE_FORMAT = '%m-%d-%Y--%H-%M-%S.%f-%Z'
 
         # self.sorted_sroDF = None
 
@@ -67,8 +67,7 @@ class DynamicRoadObject:
         self.sorted_sroDF = None
         self.closest_intersection = self.get_closest_intersection(as_list=False)
         self.closest_intersection_list = self.get_closest_intersection(as_list=True)
-        self.closest_approaching_intersection = (
-            self.get_closest_approaching_intersection()
+        self.closest_approaching_intersection = self.get_closest_approaching_intersection(
         )
 
         self.in_file_path = PurePath("./in/")
@@ -83,7 +82,8 @@ class DynamicRoadObject:
         return df[df[key] == value]
 
     def update_location_simple(self, i: int = 2) -> None:
-        """Update dynamic object location with new data point i"""
+        """ Update dynamic object location with new data point i
+        """
         self.t0 = self.t1
         self.t1 = self.gpx_df.loc[i].t
 
@@ -96,9 +96,7 @@ class DynamicRoadObject:
         self.spd = self.gpx_df.loc[i].spd
 
         self.closest_intersection = self.get_closest_intersection()
-        self.closest_approaching_intersection = (
-            self.get_closest_approaching_intersection()
-        )
+        self.closest_approaching_intersection = self.get_closest_approaching_intersection()
 
     def first_timestamp(self) -> pd.Timestamp:
         t = datetime.fromisoformat(str(self.t0))
@@ -146,7 +144,7 @@ class DynamicRoadObject:
                 return self.pt1.format_decimal()
 
     def get_dist_step(self) -> geopy.distance:
-        """first distance step
+        """ first distance step
 
         :return: geopy distance in feet
         """
@@ -177,7 +175,7 @@ class DynamicRoadObject:
 
     def get_spd(self, units="MPH") -> float:
         if units == "MPH":
-            return float(self.spd * self.MStoMPH)  # Ft/sec
+            return float(self.spd * self.MStoMPH) # Ft/sec
         else:
             return float(self.spd)  # Meters/sec
 
@@ -188,7 +186,7 @@ class DynamicRoadObject:
 
         This might be used if GPX v1.1 does not log speed data, so this will calculate it.
         """
-        self.gpx_df.drop(["spd"], axis=1)  # remove None values for speed
+        self.gpx_df.drop(['spd'], axis=1)  # remove None values for speed
         spd_list = [0]
 
         for n in range(1, self.gpx_df.last_valid_index()):
@@ -196,48 +194,48 @@ class DynamicRoadObject:
             if self.get_time_step() == 0:
                 speed = 0
             else:
-                speed = (self.get_dist_step() / self.get_time_step()) * self.FTPStoMPH
+                speed = (self.get_dist_step() /
+                         self.get_time_step()) * self.FTPStoMPH
 
             spd_list.append(speed)
             if n == self.gpx_df.last_valid_index():
-                self.gpx_df["spd"] = spd_list
+                self.gpx_df['spd'] = spd_list
 
     def get_bearing(self) -> float:
         b = gpxgeo.get_course(self.pt0[0], self.pt0[1], self.pt1[0], self.pt1[1])
         self.bearing = b
         return b
 
-    def approaching(
-        self, sro: StaticRoadObject
-    ) -> bool:  # , self.sro: StaticRoadObject
+    def approaching(self, sro: StaticRoadObject) -> bool:  # , self.sro: StaticRoadObject
         if self.cur_dist_to_sro(sro) <= self.prev_dist_to_sro(sro):
             return True
         else:
             return False
 
     def get_closest_intersection(self, as_list=False) -> Intersection:
-        """returns None or 1st or ascending sorted list of intersection objects based on distance"""
+        """returns None or 1st or ascending sorted list of intersection objects based on distance
+        """
 
         # Crop min and max distances to limit search, sort and length
         min_sd = self.sro_df.iloc[0, 1].get_sd("min")
         max_sd = self.sro_df.iloc[0, 1].get_sd("max")
 
         for row in range(0, self.sro_df.last_valid_index()):
-            self.sro_df.loc[row, "d"] = self.cur_dist_to_sro(self.sro_df.iloc[row, 1])
+            self.sro_df.loc[row,
+                            "d"] = self.cur_dist_to_sro(self.sro_df.iloc[row, 1])
             self.sro_df.loc[row, "approaching"] = self.approaching(
-                self.sro_df.iloc[row, 1]
-            )
+                self.sro_df.iloc[row, 1])
 
-        self.sorted_sroDF = self.sro_df.sort_values(by=["d"], ignore_index=True)
+        self.sorted_sroDF = self.sro_df.sort_values(by=['d'], ignore_index=True)
 
-        min_row = self.sorted_sroDF[self.sorted_sroDF["d"].ge(min_sd)].index
+        min_row = self.sorted_sroDF[self.sorted_sroDF['d'].ge(min_sd)].index
 
         if len(min_row) == 0:
             min_row = 0
         else:
             min_row = min(min_row)
 
-        max_row = self.sorted_sroDF[self.sorted_sroDF["d"].le(max_sd)].index
+        max_row = self.sorted_sroDF[self.sorted_sroDF['d'].le(max_sd)].index
         if len(max_row) == 0:
             max_row = 0
         else:
@@ -254,7 +252,7 @@ class DynamicRoadObject:
                 return limited_df.iloc[0, 1]
 
     def get_closest_approaching_intersection(self, as_list=False) -> Intersection:
-        """returns the closest, approaching intersection object for the current point
+        """ returns the closest, approaching intersection object for the current point
         of the dynamic object based on sorted list of intersections.
 
         :return: intersection object
@@ -263,7 +261,7 @@ class DynamicRoadObject:
         if df is None:
             return None
         else:
-            mask = df["approaching"].values == True
+            mask = df['approaching'].values == True
             if df[mask].empty:
                 return None
             elif as_list:
@@ -290,7 +288,7 @@ class DynamicRoadObject:
             self.calc_bearing_diff(itrsxn.get_bearing(0)),
             self.calc_bearing_diff(itrsxn.get_bearing(1)),
             self.calc_bearing_diff(itrsxn.get_bearing(2)),
-            self.calc_bearing_diff(itrsxn.get_bearing(3)),
+            self.calc_bearing_diff(itrsxn.get_bearing(3))
         ]
 
         approach_leg_index = np.argmin(veh_int_diff)
@@ -311,7 +309,7 @@ class DynamicRoadObject:
             return app_leg_dir
 
     def drive_gpx(self, gpx_filename: str, use_pickle_file=False) -> pd.DataFrame:
-        """Load the GPX file into a dataframe with timestamp, location, speed, dist to event, bearing, and
+        """ Load the GPX file into a dataframe with timestamp, location, speed, dist to event, bearing, and
         id of approaching intersection
 
         :param gpx_filename: absolute filepath of file (without .gpx or .p file)
@@ -338,7 +336,7 @@ class DynamicRoadObject:
                 "spd": [],
                 "distance": [],
                 "bearing": [],
-                "approaching": [],
+                "approaching": []
             }
 
             for i in range(2, self.gpx_df.last_valid_index()):
@@ -356,9 +354,9 @@ class DynamicRoadObject:
                         pass
                 else:
                     approaching_sd = False
-                    appr_distance = cai.distance_from_sb(
-                        self.get_location(), self.approach_leg(cai)
-                    ) - cai.get_sd(self.approach_leg(cai))
+                    appr_distance = (cai.distance_from_sb(
+                        self.get_location(), self.approach_leg(cai)) -
+                                     cai.get_sd(self.approach_leg(cai)))
 
                     if appr_distance > 0:
                         approaching_sd = True
@@ -381,91 +379,103 @@ class DynamicRoadObject:
                         )
         return approach_log_df
 
-    def drive_gpx_stop_bar(self, gpx_filename, use_pickle_file=True) -> pd.DataFrame:
-        """Load the GPX file and generate a dataframe of approach events."""
+    def drive_gpx_stop_bar(self,
+                           gpx_filename,
+                           use_pickle_file=True) -> pd.DataFrame:
+        """ Load the GPX file into a dataframe with timestamp, location, speed, dist to event, bearing, and
+        id of approaching intersection
 
+        :param gpx_directory: file directory where .gpx file is for input
+        :param gpx_filename: filename of .gpx file (without .gpx)
+        :param out_file_directory: where output files are saved to (./out/)
+        :param use_pickle_file: default to False, can be faster to load from pickle
+        :return: DataFrame with GPX calculated for sro file and saved a CSV and Pickle file of gpx information
+
+        """
+        # self.gpx_filepath = gpx_directory + gpx_filename + ".gpx"
         pickle_file = self.out_file_path / (str(gpx_filename) + ".p")
         csv_file = self.out_file_path / (str(gpx_filename) + ".csv")
 
-        if use_pickle_file and os.path.isfile(pickle_file):
-            return pd.read_pickle(pickle_file)
+        approach_sb_log_df = None
 
-        approach_sb_log_df = self.parse_gpx_points()
-        self.write_summary(approach_sb_log_df, csv_file, pickle_file)
+        if use_pickle_file and os.path.isfile(pickle_file):
+            approach_sb_log_df = pd.read_pickle(pickle_file)
+            return approach_sb_log_df
+        else:
+            # dictionary-> Keys:Values
+            appr_dict = {
+                "id": [],
+                "appr_dir": [],
+                "timestamp": [],
+                "time_delta": [],
+                "location": [],
+                "spd": [],
+                "distance": [],
+                "bearing": [],
+                "approaching": []
+            }
+
+            for i in tqdm(range(2, self.gpx_df.last_valid_index()),
+                          desc="Loading GPX:",
+                          unit="GPX Points"):
+
+                self.update_location_simple(i)
+                cai = self.get_closest_approaching_intersection()
+                if cai is None:
+                    if i == self.gpx_df.last_valid_index() - 1:
+                        approach_sb_log_df = pd.DataFrame(appr_dict)
+                        approach_sb_log_df.to_csv(csv_file)
+                        approach_sb_log_df.to_pickle(pickle_file)
+                        print(
+                            f"exported dataframe to CSV (in {csv_file}) and Pickle (in {pickle_file})"
+                        )
+                    else:
+                        pass
+                else:
+                    approaching_sd = False
+                    appr_distance = (cai.distance_from_sb(
+                        self.get_location(), self.approach_leg(cai)) -
+                                     cai.get_sd(self.approach_leg(cai)))
+                    # print(f'{i}: {appr_distance}ft from {cai.get_name()}')
+                    if appr_distance > 0:
+                        approaching_sd = True
+
+                    appr_dict["id"].append(cai.get_id_num())
+                    appr_dict["appr_dir"].append(self.approach_leg(cai))
+                    appr_dict["timestamp"].append(self.get_utc_timestamp())
+                    appr_dict["time_delta"].append(self.get_time_step())
+                    appr_dict["location"].append(self.get_location())
+                    appr_dict["spd"].append(self.get_spd())
+                    appr_dict["distance"].append(appr_distance)
+                    appr_dict["bearing"].append(self.get_bearing())
+                    appr_dict["approaching"].append(approaching_sd)
+
+                    if i == self.gpx_df.last_valid_index() - 1:
+                        print("WRITING DICT TO DATAFRAME")
+                        approach_sb_log_df = pd.DataFrame(appr_dict)
+                        approach_sb_log_df.to_csv(csv_file)
+                        approach_sb_log_df.to_pickle(pickle_file)
+                        print(
+                            f"Exported data frame to CSV ({csv_file}) and Pickle ({pickle_file})"
+                        )
+                        print(f'ApproachSB_DF:{approach_sb_log_df}')
+
         return approach_sb_log_df
 
-    def parse_gpx_points(self) -> pd.DataFrame:
-        """Iterate through GPX points and log approach information."""
-
-        appr_dict = self._init_approach_dict()
-        for i in tqdm(
-            range(2, self.gpx_df.last_valid_index()),
-            desc="Loading GPX:",
-            unit="GPX Points",
-        ):
-            self.update_location_simple(i)
-            cai = self.get_closest_approaching_intersection()
-            if cai is None:
-                continue
-
-            appr_distance = cai.distance_from_sb(
-                self.get_location(), self.approach_leg(cai)
-            ) - cai.get_sd(self.approach_leg(cai))
-            self.update_approach_dict(appr_dict, cai, appr_distance)
-
-        return pd.DataFrame(appr_dict)
-
-    @staticmethod
-    def _init_approach_dict() -> dict:
-        return {
-            "id": [],
-            "appr_dir": [],
-            "timestamp": [],
-            "time_delta": [],
-            "location": [],
-            "spd": [],
-            "distance": [],
-            "bearing": [],
-            "approaching": [],
-        }
-
-    def update_approach_dict(
-        self, appr_dict: dict, cai: Intersection, distance: float
-    ) -> None:
-        """Append approach information for a single GPX point."""
-
-        approaching_sd = distance > 0
-        appr_dict["id"].append(cai.get_id_num())
-        appr_dict["appr_dir"].append(self.approach_leg(cai))
-        appr_dict["timestamp"].append(self.get_utc_timestamp())
-        appr_dict["time_delta"].append(self.get_time_step())
-        appr_dict["location"].append(self.get_location())
-        appr_dict["spd"].append(self.get_spd())
-        appr_dict["distance"].append(distance)
-        appr_dict["bearing"].append(self.get_bearing())
-        appr_dict["approaching"].append(approaching_sd)
-
-    @staticmethod
-    def write_summary(
-        df: pd.DataFrame, csv_file: PurePath, pickle_file: PurePath
-    ) -> None:
-        df.to_csv(csv_file)
-        df.to_pickle(pickle_file)
-        print(f"Exported data frame to CSV ({csv_file}) and Pickle ({pickle_file})")
-
     def get_street(self, itrsxn: Intersection) -> str:
-        """current Street of intersection approach leg"""
+        """ current Street of intersection approach leg
+        """
         apr_leg_index = self.approach_leg(itrsxn)
         return itrsxn.get_name(apr_leg_index)
 
     def get_info(self, itrsxn: Intersection) -> str:
-        """get ID#, bearing, and name about an intersection
+        """ get ID#, bearing, and name about an intersection
 
         :param itrsxn: Intersection Object
         :return: string of info in format ID#.Compass_Heading - Intersection Name
         """
         return str(
-            f"{itrsxn.get_id_num()}.{self.approach_leg(itrsxn)}-{itrsxn.get_name()}"
+            f'{itrsxn.get_id_num()}.{self.approach_leg(itrsxn)}-{itrsxn.get_name()}'
         )
 
     def get_itrsxn_obj_by_id(self, id_num: int) -> Intersection:
@@ -474,7 +484,7 @@ class DynamicRoadObject:
         :param id_num: ID number of intersection object
         :return: intersection object
         """
-        mask = self.sro_df["id"] == id_num
+        mask = self.sro_df['id'] == id_num
         return self.sro_df[mask].iloc[0, 1]
 
     def get_info_by_id(self, id_num: int, appr_dir) -> str:
@@ -485,14 +495,14 @@ class DynamicRoadObject:
         :return: string in format:
             ID#.direction_index - street1 + street2 - event distance string
         """
-        mask = self.sro_df["id"] == id_num
+        mask = self.sro_df['id'] == id_num
         itrsxn = self.sro_df[mask].iloc[0, 1]
         """
         Example: 2.0-YVR+California-35mph-325ft-UTCtime
         Include: direction, Approach Posted Speed
         """
         return str(
-            f"{itrsxn.get_id_num()}.{appr_dir}-{itrsxn.get_name()}-{itrsxn.get_sd(appr_dir)}ft"
+            f'{itrsxn.get_id_num()}.{appr_dir}-{itrsxn.get_name()}-{itrsxn.get_sd(appr_dir)}ft'
         )
 
     @staticmethod
@@ -501,7 +511,7 @@ class DynamicRoadObject:
 
     @staticmethod
     def t_spd_adjust(d0: float, spd0: float, d1: float, spd1: float) -> float:
-        """Adjusts time of event based on speed of gpx points i and i+1.
+        """ Adjusts time of event based on speed of gpx points i and i+1.
 
         :param d0: distance a t=0
         :param spd0: speed at t=0
@@ -547,39 +557,31 @@ class DynamicRoadObject:
             "appr_dir": [],
             "timestamp": [],
             "location": [],
-            "spd": [],  # MPH
-            "distance": [],  # FEET
-            "t_adjust": [],  # SECONDS
-            "string_desc": [],
+            "spd": [],          # MPH
+            "distance": [],     # FEET
+            "t_adjust": [],     # SECONDS
+            "string_desc": []
         }
 
         for i in range(1, (gpx_df.last_valid_index() - 3)):
-            if (
-                gpx_df.spd.iloc[i] > 0.4
-                and gpx_df.spd.iloc[i + 1] > 0.4
-                and gpx_df.distance.iloc[i + 1]
-                <= self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).get_sd(
-                    gpx_df.appr_dir.iloc[i + 1]
-                )
-                + (gpx_df.time_delta.iloc[i] * (gpx_df.spd.iloc[i] * self.MPHtoFTPS))
-            ):
+            if gpx_df.spd.iloc[i] > 0.4 and \
+                    gpx_df.spd.iloc[i + 1] > 0.4 and \
+                    gpx_df.distance.iloc[i + 1] <= \
+                    self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).get_sd(gpx_df.appr_dir.iloc[i + 1]) + \
+                        (gpx_df.time_delta.iloc[i] * (gpx_df.spd.iloc[i] * self.MPHtoFTPS)):
                 print("heuristic filter")
 
-                if (
-                    (gpx_df.approaching.iloc[i - 1]) == True
-                    and (gpx_df.approaching.iloc[i]) == True
-                    and (gpx_df.approaching.iloc[i + 1] == False)
-                    and (gpx_df.approaching.iloc[i + 2] == False)
-                ):
+                if (gpx_df.approaching.iloc[i - 1]) == True and \
+                        (gpx_df.approaching.iloc[i]) == True and \
+                        (gpx_df.approaching.iloc[i + 1] == False) and \
+                        (gpx_df.approaching.iloc[i + 2] == False):
 
                     print("approach filter")
 
-                    t_adjust = self.t_spd_adjust(
-                        gpx_df.distance.iloc[i],
-                        gpx_df.spd.iloc[i],
-                        gpx_df.distance.iloc[i + 1],
-                        gpx_df.spd.iloc[i + 1],
-                    )
+                    t_adjust = self.t_spd_adjust(gpx_df.distance.iloc[i], gpx_df.spd.iloc[i],
+                                                 gpx_df.distance.iloc[i + 1], gpx_df.spd.iloc[i + 1]
+                                                 )
+
 
                     # t_adj is less than timestep when dynamic object is close to event distance
                     if t_adjust <= gpx_df.time_delta.iloc[i]:
@@ -592,12 +594,10 @@ class DynamicRoadObject:
                         df_dict["distance"].append(gpx_df.distance.iloc[i])
                         df_dict["t_adjust"].append(t_adjust)
                         df_dict["string_desc"].append(
-                            self.get_info_by_id(
-                                gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i]
-                            )
-                        )
+                            self.get_info_by_id(gpx_df.id.iloc[i],
+                                                gpx_df.appr_dir.iloc[i]))
                         print(
-                            f"seek_sd_Info:{self.get_info_by_id(gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i])}, time adjust:{t_adjust}"
+                            f'seek_sd_Info:{self.get_info_by_id(gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i])}, time adjust:{t_adjust}'
                         )
                     else:
                         pass
@@ -628,56 +628,38 @@ class DynamicRoadObject:
             "spd": [],
             "distance": [],
             "t_adjust": [],
-            "string_desc": [],
+            "string_desc": []
         }
 
         for i in range(1, (gpx_df.last_valid_index() - 3)):
-            if (
-                self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).distance_from_sb(
-                    gpx_df.location.iloc[i + 1], gpx_df.appr_dir.iloc[i + 1]
-                )
-                is None
-            ):
-                print(f"USING CENTER OF INTERSECTION LOCATION")
-                approach_distance = (
-                    self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).get_sd(
-                        gpx_df.appr_dir.iloc[i + 1]
-                    )
-                    + 50
-                )
-            else:
-                print(f"USING STOP BAR LOCATION")
+            if self.get_itrsxn_obj_by_id(gpx_df.id.iloc[i]).distance_from_sb(
+                    gpx_df.location.iloc[i + 1], gpx_df.appr_dir.iloc[i + 1]) is None:
+                print(f'USING CENTER OF INTERSECTION LOCATION')
                 approach_distance = self.get_itrsxn_obj_by_id(
-                    gpx_df.id.iloc[i]
-                ).distance_from_sb(
-                    gpx_df.location.iloc[i + 1], gpx_df.appr_dir.iloc[i + 1]
-                )
+                    gpx_df.id.iloc[i]).get_sd(gpx_df.appr_dir.iloc[i + 1]) + 50
+            else:
+                print(f'USING STOP BAR LOCATION')
+                approach_distance = self.get_itrsxn_obj_by_id(
+                    gpx_df.id.iloc[i]).distance_from_sb(gpx_df.location.iloc[i + 1],
+                                                        gpx_df.appr_dir.iloc[i + 1])
 
-            if (
-                gpx_df.spd.iloc[i] > 0.2
-                and gpx_df.spd.iloc[i + 1] > 0.2
-                and gpx_df.distance.iloc[i + 1]
-                <= approach_distance
-                <= gpx_df.distance.iloc[i]
-            ):
+            if gpx_df.spd.iloc[i] > 0.2 and gpx_df.spd.iloc[i + 1] > 0.2 \
+                    and gpx_df.distance.iloc[i + 1] <= approach_distance <= gpx_df.distance.iloc[i]:
 
                 if True:
                     """
-                    calculate exact time based on speed. using i and i+1.
-
+                    calculate exact time based on speed. using i and i+1. 
+                    
                     For point i and i+1, the exact time adjustment is weighted
                     based on the speeds at these two point's in time. This shifts the exact position
                     of the car to the most accurate time it was at the calculated sight distance
-
+                    
                     store that time in UTC in DF
                     """
 
-                    t_adjust = self.t_spd_adjust(
-                        gpx_df.distance.iloc[i],
-                        gpx_df.spd.iloc[i],
-                        gpx_df.distance.iloc[i + 1],
-                        gpx_df.spd.iloc[i + 1],
-                    )
+                    t_adjust = self.t_spd_adjust(gpx_df.distance.iloc[i], gpx_df.spd.iloc[i],
+                                                 gpx_df.distance.iloc[i + 1], gpx_df.spd.iloc[i + 1]
+                                                 )
 
                     if t_adjust <= 1:
                         df_dict_sb["id"].append(gpx_df.id.iloc[i])
@@ -688,14 +670,12 @@ class DynamicRoadObject:
                         df_dict_sb["distance"].append(gpx_df.distance.iloc[i])
                         df_dict_sb["t_adjust"].append(t_adjust)
                         df_dict_sb["string_desc"].append(
-                            self.get_info_by_id(
-                                gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i]
-                            )
-                        )
+                            self.get_info_by_id(gpx_df.id.iloc[i],
+                                                gpx_df.appr_dir.iloc[i]))
 
                         # print(self.utc_to_timestamp(df.timestamp.iloc[i]))
                         print(
-                            f"info:{self.get_info_by_id(gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i])}"
+                            f'info:{self.get_info_by_id(gpx_df.id.iloc[i], gpx_df.appr_dir.iloc[i])}'
                         )
 
                     else:
@@ -704,8 +684,7 @@ class DynamicRoadObject:
                 pass
         if csv_out:
             pd.DataFrame(df_dict_sb).to_csv(
-                self.out_file_path / "approaching_intersections_Stopbar.csv"
-            )
+                self.out_file_path / "approaching_intersections_Stopbar.csv")
         return pd.DataFrame(df_dict_sb)
 
     # TODO: create new method
