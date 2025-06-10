@@ -295,8 +295,8 @@ class Intersection(StaticRoadObject):
     
     def get_location_sb(self, bearing_index) -> geopy.Point:
         shortest_index = np.argmin(
-            [geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][0]).ft,
-            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][1]).ft]
+            [geopy.distance.distance(self.ctr_pt, self.stop_bar_d[bearing_index][0]).ft,
+            geopy.distance.distance(self.ctr_pt, self.stop_bar_d[bearing_index][1]).ft]
         )
         return self.stop_bar_d[bearing_index][shortest_index]
 
