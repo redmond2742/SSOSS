@@ -286,10 +286,13 @@ class Intersection(StaticRoadObject):
         return (nb and eb and sb and wb)
     
     def center_to_sb_distance(self, bearing_index):
-        """not used"""
+        """Return the distance from the intersection center to the stop bar.
+
+        The intersection center point is stored in ``ctr_pt``.
+        """
         min_distance = min(
-            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][0]).ft,
-            geopy.distance.distance(self.ctr_pnt, self.stop_bar_d[bearing_index][1]).ft
+            geopy.distance.distance(self.ctr_pt, self.stop_bar_d[bearing_index][0]).ft,
+            geopy.distance.distance(self.ctr_pt, self.stop_bar_d[bearing_index][1]).ft,
         )
         return min_distance
     
