@@ -8,5 +8,6 @@ imageio
 tqdm
 lxml
 pillow
+piexif
 python-dateutil
 

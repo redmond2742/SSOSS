@@ -23,10 +23,11 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 * Example CSV templates are provided to help get started making the static roadway object input file for both static objects and traffic signals.
 * Video Synchronization Helper Tools: Options are provided to export the video frames and help to synchronize the video file.
 * Image Labeling and animated GIF image tools: Selectable options are included to label images or create an animated GIF from multiple images.
+* GPS EXIF tagging: Extracted frames include GPS metadata for easy mapping.
 
 ## Requirements
 - Python 3.9
-- Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml 
+- Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml, pillow, piexif
 
 ## Installation
 Windows OS users can use the [Releases](https://github.com/redmond2742/ssoss/releases) to download an .exe of SSOSS for simple graphical usage. For Mac and Linux users, the command line option is described below.
