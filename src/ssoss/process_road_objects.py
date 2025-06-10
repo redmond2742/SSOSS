@@ -45,8 +45,8 @@ class ProcessRoadObjects:
         self.pretty_datetime_format = "%y-%m-%d %H:%M:%S"
         self.in_gpx_dir_path = Path(gpx_filestring).parent
         self.in_dir_path = self.in_gpx_dir_path
-        self.out_dir_path = Path(self.in_dir_path, "/out/") #  self.in_dir_path / "out/"
-        self.out_dir_path.parent.mkdir(exist_ok=True, parents=True)
+        self.out_dir_path = self.in_dir_path / "out"
+        self.out_dir_path.mkdir(exist_ok=True, parents=True)
 
         # init variables
         #if signals_filestring:

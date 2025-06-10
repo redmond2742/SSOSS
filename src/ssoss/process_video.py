@@ -27,8 +27,8 @@ class ProcessVideo:
         self.video_dir = Path(video_filestring).parents[0]
         self.video_filepath = Path(video_filestring)
         self.video_filename = Path(video_filestring).name
-        self.image_out_path = self.video_dir / "out/"
-        self.image_out_path.parent.mkdir(exist_ok=True, parents=True)
+        self.image_out_path = self.video_dir / "out"
+        self.image_out_path.mkdir(exist_ok=True, parents=True)
 
         self.fps = self.get_fps()
         self.frame_count = self.get_frame_count()
