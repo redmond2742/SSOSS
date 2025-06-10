@@ -71,7 +71,8 @@ class DynamicRoadObject:
         )
 
         self.in_file_path = PurePath("./in/")
-        self.out_file_path = PurePath("./out/")
+        self.out_file_path = Path("./out")
+        self.out_file_path.mkdir(exist_ok=True, parents=True)
 
         if self.spd is None:
             self.calculate_spd_values()
