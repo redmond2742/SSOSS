@@ -100,5 +100,37 @@ class TestDistanceToSB(unittest.TestCase):
         self.assertLess(self.wb_result, 215)
 
 
+class TestIntersectionHelpers(unittest.TestCase):
+    """Ensure helper methods on :class:`Intersection` execute correctly."""
+
+    intersection_name = ("California", "Powell")
+    intersection_ctr_pt = geopy.Point(37.79205307308094, -122.40918793416158)
+    intersection_spd_tuple = (25, 25, 25, 25)
+    intersection_bearing = (346.33, 90.09, 174.52, 271.11)
+    intersection_stop_bar_nb = (
+        geopy.Point(37.791939238323664, -122.40915035636318),
+        geopy.Point(37.79194559709975, -122.4091101232288),
+    )
+
+    test_intersection = Intersection(
+        101,
+        intersection_name,
+        intersection_ctr_pt,
+        spd=intersection_spd_tuple,
+        bearing=intersection_bearing,
+        stop_bar_nb=intersection_stop_bar_nb,
+    )
+
+    def test_get_location_sb_runs(self):
+        """``get_location_sb`` should return a ``geopy.Point`` without error."""
+        pt = self.test_intersection.get_location_sb(0)
+        self.assertIsInstance(pt, geopy.Point)
+
+    def test_center_to_sb_distance_runs(self):
+        """``center_to_sb_distance`` should return a numeric distance."""
+        dist = self.test_intersection.center_to_sb_distance(0)
+        self.assertIsInstance(dist, float)
+
+
 if __name__ == '__main__':
     unittest.main()
