@@ -594,15 +594,14 @@ class ProcessRoadObjects:
         if sec < 60:
             return f'{sec} seconds'
         elif sec < 3600:
-            min = int(sec/60)
-            sec_remain = round(sec - min * 60, 2)
-            return f'{min}:{sec_remain} (MM:SS.ss)'
+            minutes = int(sec / 60)
+            sec_remain = round(sec - minutes * 60, 2)
+            return f'{minutes:02}:{sec_remain:05.2f} (MM:SS.ss)'
         elif sec >= 3600:
-            hr = int(sec/3600)
-            min_remain = round(sec - hr * 3600, 2)
-            min = int(min_remain/60)
-            sec_remain = round(sec - min * 60, 2)
-            return f'{hr}:{min}:{sec_remain} (HH:MM:SS.ss)'
+            hr = int(sec / 3600)
+            minutes = int((sec - hr * 3600) / 60)
+            sec_remain = round(sec - (hr * 3600 + minutes * 60), 2)
+            return f'{hr:02}:{minutes:02}:{sec_remain:05.2f} (HH:MM:SS.ss)'
 
     @staticmethod
     def simplify_distance(d_ft):
