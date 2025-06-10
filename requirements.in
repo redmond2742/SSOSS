@@ -9,4 +9,5 @@ tqdm
 lxml
 pillow
 python-dateutil
+piexif
 
