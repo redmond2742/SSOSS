@@ -11,6 +11,8 @@ import numpy as np
 from tqdm import tqdm
 import cv2
 import imageio
+from PIL import Image
+import piexif
 
 
 class ProcessVideo:
@@ -86,24 +88,25 @@ class ProcessVideo:
         return None
 
     def create_pic_list_from_zip(self, i_desc_timestamps):
-        """returns sight distance description text and frame of video to extract as 2 lists"""
+        """Return descriptions, frame numbers and timestamps for extraction."""
         intersection_desc = []
         frames = []
+        timestamps = []
         prev_frame = 0
         filename_description, time_of_sd = zip(*i_desc_timestamps)
 
-        for sd_item in range(0, len(i_desc_timestamps)):
+        for sd_item in range(len(i_desc_timestamps)):
             time_of_picture = time_of_sd[sd_item] - self.get_start_timestamp()
-            if time_of_picture > 0 and time_of_picture <= self.get_duration():
+            if 0 < time_of_picture <= self.get_duration():
                 frame_of_video = time_of_picture * self.fps
 
-                #  build up lists if not duplicate frame
                 if int(frame_of_video) > int(prev_frame):
                     intersection_desc.append(filename_description[sd_item])
                     frames.append(int(frame_of_video))
+                    timestamps.append(time_of_sd[sd_item])
                 prev_frame = frame_of_video
 
-        return intersection_desc, frames
+        return intersection_desc, frames, timestamps
 
     def save_frame_ffmpeg(self, frame_number: int, output_path: Path) -> None:
         """Save a specific frame quickly using ffmpeg."""
@@ -123,6 +126,33 @@ class ProcessVideo:
             str(output_path),
         ]
         subprocess.run(cmd, check=True)
+
+    @staticmethod
+    def write_gps_exif(image_path: Path, location) -> None:
+        """Write GPS EXIF tags to ``image_path`` using ``location``."""
+
+        if location is None:
+            return
+
+        def _to_deg(value):
+            abs_value = abs(value)
+            deg = int(abs_value)
+            minutes_float = (abs_value - deg) * 60
+            minutes = int(minutes_float)
+            seconds = round((minutes_float - minutes) * 60 * 100)
+            return ((deg, 1), (minutes, 1), (int(seconds), 100))
+
+        gps_ifd = {
+            piexif.GPSIFD.GPSLatitudeRef: "N" if location.latitude >= 0 else "S",
+            piexif.GPSIFD.GPSLatitude: _to_deg(location.latitude),
+            piexif.GPSIFD.GPSLongitudeRef: "E" if location.longitude >= 0 else "W",
+            piexif.GPSIFD.GPSLongitude: _to_deg(location.longitude),
+        }
+
+        exif_dict = {"GPS": gps_ifd}
+        exif_bytes = piexif.dump(exif_dict)
+        img = Image.open(image_path)
+        img.save(image_path, exif=exif_bytes)
     
     def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
         """
@@ -132,17 +162,19 @@ class ProcessVideo:
         project: instance of ProcessRoadObjects() class
         """
 
-        generic_so_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
+        generic_so_desc, extract_frames, ts_list = self.create_pic_list_from_zip(desc_timestamps)
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "generic_static_object_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        for desc, frame_num in tqdm(
-                list(zip(generic_so_desc, extract_frames)),
+        for desc, frame_num, ts in tqdm(
+                list(zip(generic_so_desc, extract_frames, ts_list)),
                 desc="Frame Extraction",
                 unit=" frame"):
             frame_name = str(desc) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
+            location = project.get_location_at_timestamp(ts)
+            self.write_gps_exif(frame_filepath, location)
             print(
                 f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
@@ -159,17 +191,19 @@ class ProcessVideo:
         project: instance of ProcessRoadObjects() class
         """
 
-        intersection_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
+        intersection_desc, extract_frames, ts_list = self.create_pic_list_from_zip(desc_timestamps)
         image_path = Path(self.video_dir, "out", self.video_filepath.stem, "signal_sightings/")
         image_path.mkdir(exist_ok=True, parents=True)
 
-        for desc, frame_num in tqdm(
-                list(zip(intersection_desc, extract_frames)),
+        for desc, frame_num, ts in tqdm(
+                list(zip(intersection_desc, extract_frames, ts_list)),
                 desc="Frame Extraction",
                 unit=" frame"):
             frame_name = str(desc) + '.jpg'
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
+            location = project.get_location_at_timestamp(ts)
+            self.write_gps_exif(frame_filepath, location)
             print(
                 f'PICTURE CAPTURED AT {frame_num}: {desc}, Saved {intersection_desc.index(desc) + 1} picture(s) of {len(extract_frames)}')
 
@@ -249,7 +283,7 @@ class ProcessVideo:
         :return: Returns a .gif filetype
         """
 
-        intersection_desc, frame_list = self.create_pic_list_from_zip(desc_timestamps)
+        intersection_desc, frame_list, _ = self.create_pic_list_from_zip(desc_timestamps)
 
         for i in tqdm(range(0, len(desc_timestamps)),
                       desc="Generating Images for GIF",
