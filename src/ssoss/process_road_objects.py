@@ -677,6 +677,54 @@ class ProcessRoadObjects:
                 break
         return speed
 
+    def get_location_at_timestamp(self, ts):
+        """Return a geopy ``Point`` interpolated for ``ts``.
+
+        Parameters
+        ----------
+        ts : float
+            Unix timestamp to interpolate the latitude and longitude for.
+
+        Returns
+        -------
+        geopy.Point or None
+            The interpolated location or ``None`` if ``ts`` is outside the
+            range of the loaded GPX data.
+        """
+
+        points = self.gpx_listDF
+        if points is None or len(points) == 0:
+            return None
+
+        last_idx = len(points) - 1
+
+        # Boundary checks
+        first_ts = points.loc[0][0].get_timestamp()
+        last_ts = points.loc[last_idx][0].get_timestamp()
+        if ts < first_ts or ts > last_ts:
+            return None
+
+        # Locate the two surrounding points
+        for i in range(last_idx):
+            p0 = points.loc[i][0]
+            p1 = points.loc[i + 1][0]
+            t0 = p0.get_timestamp()
+            t1 = p1.get_timestamp()
+            if t0 <= ts <= t1:
+                if t1 == t0:
+                    return p0.get_location()
+
+                ratio = (ts - t0) / (t1 - t0)
+                lat = p0.get_location().latitude + ratio * (
+                    p1.get_location().latitude - p0.get_location().latitude
+                )
+                lon = p0.get_location().longitude + ratio * (
+                    p1.get_location().longitude - p0.get_location().longitude
+                )
+                return geopy.Point(lat, lon)
+
+        return None
+
 
 
 
