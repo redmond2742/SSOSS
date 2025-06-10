@@ -677,6 +677,32 @@ class ProcessRoadObjects:
                 break
         return speed
 
+    def get_location_at_timestamp(self, ts):
+        """Interpolate latitude and longitude for a given timestamp."""
+        point_list = self.gpx_listDF
+        last_point = len(point_list) - 1
+
+        if ts < point_list.loc[0][0].get_timestamp():
+            return None
+        if ts > point_list.loc[last_point][0].get_timestamp():
+            return None
+
+        for i in range(len(point_list) - 1):
+            p0 = point_list.loc[i][0]
+            p1 = point_list.loc[i + 1][0]
+            t0 = p0.get_timestamp()
+            t1 = p1.get_timestamp()
+            if t0 <= ts <= t1:
+                if t1 == t0:
+                    return p0.get_location().latitude, p0.get_location().longitude
+                ratio = (ts - t0) / (t1 - t0)
+                lat0, lon0 = p0.get_location().latitude, p0.get_location().longitude
+                lat1, lon1 = p1.get_location().latitude, p1.get_location().longitude
+                lat = lat0 + (lat1 - lat0) * ratio
+                lon = lon0 + (lon1 - lon0) * ratio
+                return lat, lon
+        return None
+
 
 
 

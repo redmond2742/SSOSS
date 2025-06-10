@@ -23,6 +23,7 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 * Example CSV templates are provided to help get started making the static roadway object input file for both static objects and traffic signals.
 * Video Synchronization Helper Tools: Options are provided to export the video frames and help to synchronize the video file.
 * Image Labeling and animated GIF image tools: Selectable options are included to label images or create an animated GIF from multiple images.
+* Extracted images now embed GPS coordinates in their EXIF metadata for easier mapping.
 
 ## Requirements
 - Python 3.9
@@ -146,6 +147,7 @@ For Each GPX Point:
         * If no, go to next GPX point
 
 From the sight distance timestamp and synchronized video file, the frame is extracted that is closest to that time.
+The resulting image file contains GPS EXIF information so coordinates can be viewed in external photo applications.
 
 ## Contributions
 Contributions are welcome to the SSOSS project! If you have an idea for a new feature or have found a bug, please open an issue or submit a pull request.

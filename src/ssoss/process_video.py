@@ -11,6 +11,32 @@ import numpy as np
 from tqdm import tqdm
 import cv2
 import imageio
+from PIL import Image
+import piexif
+
+
+def _deg_to_dms_rational(deg_float):
+    deg = int(abs(deg_float))
+    min_float = (abs(deg_float) - deg) * 60
+    minute = int(min_float)
+    sec = int(round((min_float - minute) * 60 * 10000))
+    return ((deg, 1), (minute, 1), (sec, 10000))
+
+
+def add_gps_exif(path, lat, lon):
+    """Insert GPS EXIF tags into an image file."""
+    if lat is None or lon is None:
+        return
+    try:
+        exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+        exif_dict["GPS"][piexif.GPSIFD.GPSLatitudeRef] = b"N" if lat >= 0 else b"S"
+        exif_dict["GPS"][piexif.GPSIFD.GPSLatitude] = _deg_to_dms_rational(lat)
+        exif_dict["GPS"][piexif.GPSIFD.GPSLongitudeRef] = b"E" if lon >= 0 else b"W"
+        exif_dict["GPS"][piexif.GPSIFD.GPSLongitude] = _deg_to_dms_rational(lon)
+        exif_bytes = piexif.dump(exif_dict)
+        piexif.insert(exif_bytes, str(path))
+    except Exception as exc:
+        print(f"Error adding GPS EXIF to {path}: {exc}")
 
 
 class ProcessVideo:
@@ -87,9 +113,10 @@ class ProcessVideo:
         return None
 
     def create_pic_list_from_zip(self, i_desc_timestamps):
-        """returns sight distance description text and frame of video to extract as 2 lists"""
+        """Return lists of descriptions, frames, and timestamps for extraction."""
         intersection_desc = []
         frames = []
+        timestamps = []
         prev_frame = 0
         filename_description, time_of_sd = zip(*i_desc_timestamps)
 
@@ -98,13 +125,13 @@ class ProcessVideo:
             if time_of_picture > 0 and time_of_picture <= self.get_duration():
                 frame_of_video = time_of_picture * self.fps
 
-                #  build up lists if not duplicate frame
                 if int(frame_of_video) > int(prev_frame):
                     intersection_desc.append(filename_description[sd_item])
                     frames.append(int(frame_of_video))
+                    timestamps.append(time_of_sd[sd_item])
                 prev_frame = frame_of_video
 
-        return intersection_desc, frames
+        return intersection_desc, frames, timestamps
 
     def save_frame_ffmpeg(self, frame_number: int, output_path: Path) -> None:
         """Save a specific frame quickly using ffmpeg."""
@@ -135,7 +162,8 @@ class ProcessVideo:
         project: instance of ProcessRoadObjects() class
         """
 
-        generic_so_desc, extract_frames = self.create_pic_list_from_zip(desc_timestamps)
+        generic_so_desc, extract_frames, ts_list = self.create_pic_list_from_zip(desc_timestamps)
+        gps_list = [project.get_location_at_timestamp(ts) for ts in ts_list]
         image_path = Path(
             self.video_dir,
             "out",
@@ -144,14 +172,16 @@ class ProcessVideo:
         )
         image_path.mkdir(exist_ok=True, parents=True)
 
-        for desc, frame_num in tqdm(
-            list(zip(generic_so_desc, extract_frames)),
+        for desc, frame_num, gps in tqdm(
+            list(zip(generic_so_desc, extract_frames, gps_list)),
             desc="Frame Extraction",
             unit=" frame",
         ):
             frame_name = str(desc) + ".jpg"
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
+            if gps:
+                add_gps_exif(frame_filepath, gps[0], gps[1])
             print(
                 f"PICTURE CAPTURED AT {frame_num}: {desc}, Saved {generic_so_desc.index(desc) + 1} picture(s) of {len(extract_frames)}"
             )
@@ -166,30 +196,33 @@ class ProcessVideo:
     ):
         """Extract sighting images from a video."""
 
-        intersection_desc, extract_frames = self.create_pic_list_from_zip(
+        intersection_desc, extract_frames, ts_list = self.create_pic_list_from_zip(
             desc_timestamps
         )
+        gps_list = [project.get_location_at_timestamp(ts) for ts in ts_list]
         image_path = Path(
             self.video_dir, "out", self.video_filepath.stem, "signal_sightings/"
         )
         image_path.mkdir(exist_ok=True, parents=True)
 
-        self._save_frames(intersection_desc, extract_frames, image_path)
+        self._save_frames(intersection_desc, extract_frames, image_path, gps_list)
 
         if label_img:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project)
 
-    def _save_frames(self, descriptions, frames, image_path: Path) -> None:
+    def _save_frames(self, descriptions, frames, image_path: Path, gps_list=None) -> None:
         """Save frames described by ``descriptions`` and ``frames`` to disk."""
 
-        for desc, frame_num in tqdm(
+        for idx, (desc, frame_num) in enumerate(tqdm(
             list(zip(descriptions, frames)), desc="Frame Extraction", unit=" frame"
-        ):
+        )):
             frame_name = str(desc) + ".jpg"
             frame_filepath = image_path / frame_name
             self.save_frame_ffmpeg(frame_num, frame_filepath)
+            if gps_list and idx < len(gps_list) and gps_list[idx]:
+                add_gps_exif(frame_filepath, gps_list[idx][0], gps_list[idx][1])
             print(
                 f"PICTURE CAPTURED AT {frame_num}: {desc}, Saved {descriptions.index(desc) + 1} picture(s) of {len(frames)}"
             )
@@ -452,6 +485,7 @@ class ProcessVideo:
         descriptive_label,
         height_percent: tuple,
         ssoss_and_descriptive=True,
+        ro_info=None,
     ):
 
         alpha = 1  # Transparency factor.
@@ -549,6 +583,11 @@ class ProcessVideo:
             )
             # save image
             cv2.imwrite(output_filename, ssoss_and_descriptive_label)
+            if ro_info is not None:
+                ts = float(Path(output_filename).stem.split("-")[-1])
+                loc = ro_info.get_location_at_timestamp(ts)
+                if loc:
+                    add_gps_exif(output_filename, loc[0], loc[1])
 
         else:
             # no ssoss label, just descriptive label (not recommended)
@@ -570,6 +609,11 @@ class ProcessVideo:
                 2,
             )
             cv2.imwrite(output_filename, img_new)
+            if ro_info is not None:
+                ts = float(Path(output_filename).stem.split("-")[-1])
+                loc = ro_info.get_location_at_timestamp(ts)
+                if loc:
+                    add_gps_exif(output_filename, loc[0], loc[1])
 
     @staticmethod
     def generate_descriptive_label(
@@ -626,7 +670,11 @@ class ProcessVideo:
                 )
 
                 self.labels(
-                    img, label_img_name, descriptive_label, label_height_percents
+                    img,
+                    label_img_name,
+                    descriptive_label,
+                    label_height_percents,
+                    ro_info=ro_info,
                 )
 
     def img_overlay_info_box(self, vid_filename_dir, ro_info):
@@ -665,5 +713,9 @@ class ProcessVideo:
                 )
 
                 self.labels(
-                    img, label_img_name, descriptive_label, label_height_percents
+                    img,
+                    label_img_name,
+                    descriptive_label,
+                    label_height_percents,
+                    ro_info=ro_info,
                 )
