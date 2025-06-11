@@ -688,9 +688,36 @@ class DynamicRoadObject:
                 self.out_file_path / "approaching_intersections_Stopbar.csv")
         return pd.DataFrame(df_dict_sb)
 
-    # TODO: create new method
-    # def get_info_at_timestamp(timestamp)
-    #   return intersection ID, approach, spd, distance, compass direction, lat, lon
+    def get_info_at_timestamp(self, timestamp):
+        """Return data for the GPX row closest to ``timestamp``.
+
+        Parameters
+        ----------
+        timestamp : float
+            Unix timestamp to search for.
+
+        Returns
+        -------
+        tuple or None
+            ``(id, appr_dir, spd, distance, bearing, location)`` from the
+            nearest record or ``None`` if no GPX data is available.
+        """
+
+        df = getattr(self, "gpx_df", None)
+        if df is None or len(df) == 0 or "timestamp" not in df.columns:
+            return None
+
+        idx = (df["timestamp"] - timestamp).abs().idxmin()
+        row = df.loc[idx]
+
+        return (
+            row.get("id"),
+            row.get("appr_dir"),
+            row.get("spd"),
+            row.get("distance"),
+            row.get("bearing"),
+            row.get("location"),
+        )
 
 
 class Vehicle(DynamicRoadObject):
