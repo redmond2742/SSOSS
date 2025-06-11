@@ -131,6 +131,72 @@ class TestIntersectionHelpers(unittest.TestCase):
         dist = self.test_intersection.center_to_sb_distance(0)
         self.assertIsInstance(dist, float)
 
+class TestGetSdEdgeCases(unittest.TestCase):
+    """Edge case checks for ``StaticRoadObject.get_sd``."""
+
+    def test_empty_speed_dict_raises(self):
+        sro = StaticRoadObject(1, "name", geopy.Point(0, 0))
+        with self.assertRaises(StopIteration):
+            sro.get_sd()
+
+
+class TestDistanceToSBFallback(unittest.TestCase):
+    """Ensure ``distance_to_sb`` falls back to center distance."""
+
+    def test_missing_stop_bar_coordinates(self):
+        intersection = Intersection(
+            1,
+            ("A", "B"),
+            geopy.Point(0.0, 0.0),
+            spd=(25, 25, 25, 25),
+            bearing=(0, 90, 180, 270),
+            stop_bar_nb=(False, False),
+        )
+        dynamic_pt = geopy.Point(0.0001, 0.0)
+        expected = geopy.distance.distance(intersection.pt, dynamic_pt).ft
+        result = intersection.distance_to_sb(dynamic_pt, 0)
+        self.assertAlmostEqual(result, expected, places=5)
+
+    def test_zero_length_stop_bar(self):
+        intersection = Intersection(
+            2,
+            ("A", "B"),
+            geopy.Point(0.0, 0.0),
+            spd=(25, 25, 25, 25),
+            bearing=(0, 90, 180, 270),
+            stop_bar_nb=(geopy.Point(0.0, 0.0), geopy.Point(0.0, 0.0)),
+        )
+        dynamic_pt = geopy.Point(0.0001, 0.0)
+        expected = geopy.distance.distance(intersection.pt, dynamic_pt).ft
+        result = intersection.distance_to_sb(dynamic_pt, 0)
+        self.assertAlmostEqual(result, expected, places=5)
+
+
+class TestIntersectionCoordinateHelpers(unittest.TestCase):
+    """Validate coordinate based helper methods."""
+
+    def setUp(self):
+        self.intersection = Intersection(
+            5,
+            ("A", "B"),
+            geopy.Point(0.0, 0.0),
+            spd=(25, 25, 25, 25),
+            bearing=(0, 90, 180, 270),
+            stop_bar_nb=(geopy.Point(0.0001, 0.0), geopy.Point(0.001, 0.0)),
+        )
+
+    def test_get_location_sb_closest(self):
+        expected = self.intersection.stop_bar_nb[0]
+        result = self.intersection.get_location_sb(0)
+        self.assertAlmostEqual(result.latitude, expected.latitude)
+        self.assertAlmostEqual(result.longitude, expected.longitude)
+
+    def test_center_to_sb_distance_uses_nearest(self):
+        expected = geopy.distance.distance(
+            self.intersection.ctr_pt, self.intersection.stop_bar_nb[0]
+        ).ft
+        dist = self.intersection.center_to_sb_distance(0)
+        self.assertAlmostEqual(dist, expected, places=5)
 
 if __name__ == '__main__':
     unittest.main()
