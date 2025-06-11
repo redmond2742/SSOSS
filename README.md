@@ -25,6 +25,14 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 * Image Labeling and animated GIF image tools: Selectable options are included to label images or create an animated GIF from multiple images.
 * GPS EXIF tagging: Extracted frames include GPS metadata for easy mapping.
 
+## Core Modules
+* **static_road_object.py** - classes for static objects like intersections and traffic signals. `Intersection` extends `StaticRoadObject` with speed-based sight-distance data and optional stop-bar points.
+* **motion_road_object.py** - defines the `GPXPoint` record with distance, bearing, and approach heuristics used when nearing intersections.
+* **dynamic_road_object.py** - models a moving vehicle using sequences of `GPXPoint` objects, updating location and computing speed while determining the closest approaching intersection.
+* **process_road_objects.py** - loads GPX files and static-object CSVs, then annotates each GPX point with approach information and descriptive stats.
+* **process_video.py** - synchronizes a video with GPX timestamps, extracts frames around sight-distance locations, overlays labels, and can build GIFs.
+* **ssoss_cli.py** - command line interface that ties together object processing, video synchronization and image extraction.
+* **ssoss_gui.py** - optional graphical front end built with Gooey that exposes the same features through a GUI.
 ## Requirements
 - Python 3.9
 - Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml, pillow, piexif
