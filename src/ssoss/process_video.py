@@ -157,7 +157,9 @@ class ProcessVideo:
         img = Image.open(image_path)
         img.save(image_path, exif=exif_bytes)
     
-    def extract_generic_so_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
+    def extract_generic_so_sightings(
+        self, desc_timestamps, project, label_img=True, gen_gif=False, cleanup=True, overwrite=False
+    ):
         """
         extract generic sighting images from video based on description and timestamp zip
 
@@ -184,9 +186,11 @@ class ProcessVideo:
         if label_img:
             self.generic_so_img_overlay_info_box(self.video_filename, project)
         if gen_gif:
-            self.generate_gif(desc_timestamps, project)
+            self.generate_gif(desc_timestamps, project, cleanup=cleanup, overwrite=overwrite)
 
-    def extract_sightings(self, desc_timestamps, project, label_img=True, gen_gif=False):
+    def extract_sightings(
+        self, desc_timestamps, project, label_img=True, gen_gif=False, cleanup=True, overwrite=False
+    ):
         """
         extract sighting images from video based on description and timestamp zip
 
@@ -213,7 +217,7 @@ class ProcessVideo:
         if label_img:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
-            self.generate_gif(desc_timestamps, project)
+            self.generate_gif(desc_timestamps, project, cleanup=cleanup, overwrite=overwrite)
         """
         if bbox:
         self.img_overlay_bbox(description_list,project)
@@ -268,7 +272,7 @@ class ProcessVideo:
             self.save_frame_ffmpeg(i, frame_filepath)
             print(f'Saved Image {i} to {frame_filepath}')
 
-    def generate_gif(self, desc_timestamps, project, distance=100):
+    def generate_gif(self, desc_timestamps, project, distance=100, cleanup=True, overwrite=False):
         """ creates a folder of images to create a gif
         # /////////////*\\\\\\\\\\\\\\\
         # For a given sight distance timestamp location "*" calculate frames needed for gif,
@@ -283,14 +287,18 @@ class ProcessVideo:
         :param df: dataframe of key points including speed, and descriptions of the point
         :param frame_list: list of key frame at a distance to check sight of static object
         :param distance: distance (units=feet) before AND after of key frame to make images for
+        :param cleanup: remove extracted frames after GIF creation
+        :param overwrite: overwrite existing GIF files if True
         :return: Returns a .gif filetype
         """
 
         intersection_desc, frame_list, _ = self.create_pic_list_from_zip(desc_timestamps)
 
-        for i in tqdm(range(0, len(desc_timestamps)),
-                      desc="Generating Images for GIF",
-                      unit=" Location"):
+        for i in tqdm(
+            range(0, len(desc_timestamps)),
+            desc="Generating Images for GIF",
+            unit=" Location",
+        ):
             gif_basepath = self.video_dir / "out" / self.video_filepath.stem / "gif" / intersection_desc[i]
             gif_path = Path(gif_basepath)
             gif_path.mkdir(exist_ok=True, parents=True)
@@ -320,26 +328,35 @@ class ProcessVideo:
                 frame_filepath = gif_path / frame_name
                 self.save_frame_ffmpeg(j, frame_filepath)
             i += 1
-        self.assemble_gif()
+        self.assemble_gif(cleanup=cleanup, overwrite=overwrite)
 
-    def assemble_gif(self):
+    def assemble_gif(self, cleanup=True, overwrite=False):
+        """Assemble GIFs from extracted frames.
+
+        :param cleanup: remove frame folders after GIF creation
+        :param overwrite: overwrite existing GIF files if True
+        """
         #base_path = Path(self.video_dir, "out", self.video_filepath.stem, "gif/")
         gif_files_path = self.video_dir / "out" / self.video_filepath.stem / "gif"
         base_path = Path(gif_files_path)
         #base_path = "./out/frames/" + self.video_filename + "/gif/"
         img_folders = sorted(base_path.glob('*'))
-        kargs = {'duration': 1/9999999999999999}
-        for i in range(0, len(img_folders)):
+        kargs = {"duration": 1 / 9999999999999999}
+        for folder in img_folders:
             images = []
-            img_folder = os.path.basename(img_folders[i])
+            img_folder = os.path.basename(folder)
             frame_images = sorted(glob.glob(os.path.join(base_path, img_folder + "/*.jpg")))
+            gif_path = os.path.join(base_path, img_folder + ".gif")
+            if os.path.exists(gif_path) and not overwrite:
+                print(f"GIF already exists: {gif_path} (use --gif-overwrite to replace)")
+                continue
             for j in range(0, len(frame_images)):
                 if j % 5 == 0:
                     images.append(imageio.imread(frame_images[j]))
-            imageio.mimsave(os.path.join(base_path, img_folder + ".gif"), images, **kargs)
-            print(f'Created Gif: {img_folder}.gif')
-            #  TODO: delete folder of images after gif is created.
-            #  TODO: overwite existing gif option
+            imageio.mimsave(gif_path, images, **kargs)
+            print(f"Created Gif: {img_folder}.gif")
+            if cleanup:
+                shutil.rmtree(folder)
 
 
     @staticmethod

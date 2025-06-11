@@ -135,6 +135,7 @@ While SSOSS does provide approximate sight distance images, their are various so
 Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus or an few frames are obstructed.
 
 Include the -- gif flag in the command line to create. Note: this requires additional processing time for large video files.
+Use --gif-overwrite to replace an existing GIF and --no-gif-cleanup to keep the extracted frames.
 
 Saves .gif file in ./out/[video filename]/gif/
 
