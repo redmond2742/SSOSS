@@ -73,9 +73,12 @@ class ProcessVideo:
             appends frame # and timestamp to sync.txt with video filename for reference
         """
         sync_txt_folder = Path(self.video_dir, "out")
-        sync_file = str(sync_txt_folder) +"/"+ "sync.txt"
-        with open(sync_file, 'a') as f:
-            f.write(f'{self.video_filepath.stem},{frame},{ts}\n')
+        # ensure the out directory exists before attempting to write
+        sync_txt_folder.mkdir(exist_ok=True, parents=True)
+        sync_file = sync_txt_folder / "sync.txt"
+        # open in append mode so the file is created if it doesn't exist
+        with open(sync_file, "a") as f:
+            f.write(f"{self.video_filepath.stem},{frame},{ts}\n")
 
         elapsed_time = frame / self.fps
         if type(ts) is float:
