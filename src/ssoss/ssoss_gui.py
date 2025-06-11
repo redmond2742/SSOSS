@@ -68,6 +68,8 @@ def main():
     video_sync_group.add_argument("-label", "--label", metavar="Overlay Image Label", help="Include descriptive label on bottom of image", action="store_true", default=True)
     video_sync_group.add_argument("-gif", "--gif", metavar="Create Animated GIF", help="Generate GIF of Sight Distance", action="store_true", default=False)
 
+    # GIF options available only through CLI; defaults are used here
+
     args = parser.parse_args()
 
     sync_input = ("", "")
@@ -77,19 +79,18 @@ def main():
     if args.frame_extract_start and args.frame_extract_end:
         frames = (args.frame_extract_start[0], args.frame_extract_end[0])
 
-    lb = gif = bbox = False
-    if args.label:
-        lb = True
-    if args.gif:
-        gif = True
-    lb_gif_bbox = (lb, gif, bbox)
+    lb = args.label
+    gif = args.gif
+    cleanup = True
+    overwrite = False
+    extra_out = (lb, gif, cleanup, overwrite)
 
     args_static_obj_gpx_video(generic_so_file = args.static_object_file,
                               gpx_file = args.gpx_file,
                               video_file = args.video_file,
                               vid_sync = sync_input,
                               frame_extract = frames,
-                              extra_out = lb_gif_bbox
+                              extra_out = extra_out
                               )
 
 
