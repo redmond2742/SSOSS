@@ -52,3 +52,5 @@ tqdm==4.66.1
     # via -r dev-requirements.in
 tzdata==2023.3
     # via pandas
+timezonefinder==6.5.9
+    # via -r dev-requirements.in

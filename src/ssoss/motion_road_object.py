@@ -1,8 +1,7 @@
 # !/usr/bin/env python
 # coding: utf-8
 import math
-from datetime import datetime, timezone
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 from operator import attrgetter, itemgetter
 from pathlib import PurePath
 
@@ -39,7 +38,10 @@ class GPXPoint:
         # initial variables from GPX file
         self.id = id_num
         t_temp = (dateutil.parser.isoparse(t))
-        self.t = t_temp.replace(tzinfo=timezone.utc).timestamp()
+        if t_temp.tzinfo is None:
+            t_temp = t_temp.replace(tzinfo=timezone.utc)
+        self.dt = t_temp
+        self.t = t_temp.timestamp()
         self.p = geopy.Point(p[0], p[1])  # elevation not supported
         self.spd = spd
 
@@ -59,6 +61,9 @@ class GPXPoint:
 
     def get_timestamp(self) -> datetime:
         return self.t
+
+    def get_datetime(self) -> datetime:
+        return self.dt
 
     def get_prev_timedelta(self) -> float:
         return self.t - self.prev_gpx_point.get_timestamp()
