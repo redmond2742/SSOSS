@@ -9,7 +9,7 @@ def args_static_obj_gpx_video(
     video_file="",
     vid_sync=("", ""),
     frame_extract=("", ""),
-    extra_out=(True, False),
+    extra_out=(True, False, True, False),
 ):
 
     sightings = ""
@@ -38,12 +38,22 @@ def args_static_obj_gpx_video(
             if sightings and project.get_static_object_type() == "intersection":
                 print("extracting traffic signal sightings")
                 video.extract_sightings(
-                    sightings, project, label_img=extra_out[0], gen_gif=extra_out[1]
+                    sightings,
+                    project,
+                    label_img=extra_out[0],
+                    gen_gif=extra_out[1],
+                    cleanup=extra_out[2],
+                    overwrite=extra_out[3],
                 )
             if sightings and project.get_static_object_type() == "generic static object":
                 print("extracting generic static object sightings")
                 video.extract_generic_so_sightings(
-                    sightings, project, label_img=extra_out[0], gen_gif=extra_out[1]
+                    sightings,
+                    project,
+                    label_img=extra_out[0],
+                    gen_gif=extra_out[1],
+                    cleanup=extra_out[2],
+                    overwrite=extra_out[3],
                 )
         elif frame_extract[0] and frame_extract[1]:
             print("extracting frames...")
@@ -143,6 +153,20 @@ def main():
         help="Add bounding box around traffic signals",
         action="store_true",
     )
+    video_sync_group.add_argument(
+        "--no-gif-cleanup",
+        dest="gif_cleanup",
+        help="Keep extracted GIF frames after assembly",
+        action="store_false",
+        default=True,
+    )
+    video_sync_group.add_argument(
+        "--gif-overwrite",
+        dest="gif_overwrite",
+        help="Overwrite existing GIF files",
+        action="store_true",
+        default=False,
+    )
 
     # process args depending on filled in values
     args = parser.parse_args()
@@ -161,7 +185,9 @@ def main():
         gif = True
     if args.bbox:
         bbox = True
-    lb_gif_bbox = (lb, gif, bbox)
+    cleanup = args.gif_cleanup
+    overwrite = args.gif_overwrite
+    lb_gif_flags = (lb, gif, cleanup, overwrite)
 
 
     # process args
@@ -170,7 +196,7 @@ def main():
                               video_file = args.video_file,
                               vid_sync = sync_input,
                               frame_extract = frames,
-                              extra_out = lb_gif_bbox
+                              extra_out = lb_gif_flags
                               )
 
 
