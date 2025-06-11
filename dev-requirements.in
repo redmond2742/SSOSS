@@ -10,4 +10,5 @@ lxml
 pillow
 piexif
 python-dateutil
+timezonefinder
 icecream

@@ -3,6 +3,7 @@
 
 import csv, math
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import geopy
@@ -15,6 +16,7 @@ import pandas as pd
 import lxml
 from lxml import etree
 from tqdm import tqdm
+from timezonefinder import TimezoneFinder
 
 from ssoss.static_road_object import Intersection, GenericStaticObject
 from ssoss.motion_road_object import GPXPoint
@@ -332,7 +334,7 @@ class ProcessRoadObjects:
 
         # initialize starting variables if GPX v1.1 needs speed calcs
         pnt1 = geopy.Point()
-        t1 = datetime.now(timezone.utc)
+        t1 = None
 
         if use_pickle and Path(self.pickle_file).is_file():
             self.gpx_listDF = pd.read_pickle(self.pickle_file)
@@ -352,10 +354,19 @@ class ProcessRoadObjects:
 
         self.gpx_ver = self.set_gpx_ver()
         gpx_file_ref = open(self.gpx_file, "r")
-        # TODO: set timezone with lat, lon coordinates:
-        #  (https://stackoverflow.com/questions/15742045/getting-time-zone-from-lat-long-coordinates)
 
         gpx = gpxpy.parse(gpx_file_ref, version=self.gpx_ver)
+
+        # determine timezone from first point
+        tz_name = "UTC"
+        if gpx.tracks and gpx.tracks[0].segments and gpx.tracks[0].segments[0].points:
+            first = gpx.tracks[0].segments[0].points[0]
+            finder = TimezoneFinder()
+            tz_guess = finder.timezone_at(lng=first.longitude, lat=first.latitude)
+            if tz_guess:
+                tz_name = tz_guess
+        tzinfo = ZoneInfo(tz_name)
+
         pt_count = 0
         for track in gpx.tracks:
             for segment in track.segments:
@@ -377,23 +388,32 @@ class ProcessRoadObjects:
                         longitude=point.longitude,
                     )
 
+                    # convert timestamp to local timezone
+                    local_time = point.time
+                    if local_time.tzinfo is None:
+                        local_time = local_time.replace(tzinfo=tzinfo)
+                    else:
+                        local_time = local_time.astimezone(tzinfo)
+
                     if point.speed is not None:
                         pass    # GPX v1.0 includes speed in track, v1.1 can include in extension data
                     elif point.speed is None:  # GPX v1.1 speed calculation
                         if pt_count == 0:
                             point.speed = 0
+                            t1 = local_time
+                            pnt1 = p
                         else:
                             pnt0 = pnt1
                             pnt1 = p
                             t0 = t1
-                            t1 = point.time
+                            t1 = local_time
 
                             point.speed = self.speed_calc(pnt0, pnt1, t0, t1)
 
                     gpx_load["gpx_pt"].append(
                         GPXPoint(
                             pt_count,
-                            str(point.time),  # convert ISO format point.time to a string for timestamp conversion
+                            local_time.isoformat(),
                             tuple(p),  # tuple of point, lat and lon
                             point.speed
                                  )
