@@ -71,14 +71,21 @@ class ProcessVideo:
         """
         finds start time of video based on frame and timestamp
             appends frame # and timestamp to sync.txt with video filename for reference
+            duplicate entries are ignored
         """
         sync_txt_folder = Path(self.video_dir, "out")
         # ensure the out directory exists before attempting to write
         sync_txt_folder.mkdir(exist_ok=True, parents=True)
         sync_file = sync_txt_folder / "sync.txt"
-        # open in append mode so the file is created if it doesn't exist
-        with open(sync_file, "a") as f:
-            f.write(f"{self.video_filepath.stem},{frame},{ts}\n")
+        line = f"{self.video_filepath.stem},{frame},{ts}"
+        existing_lines = set()
+        if sync_file.exists():
+            with open(sync_file, "r") as f:
+                existing_lines = {l.strip() for l in f}
+        if line not in existing_lines:
+            # open in append mode so the file is created if it doesn't exist
+            with open(sync_file, "a") as f:
+                f.write(line + "\n")
 
         elapsed_time = frame / self.fps
         if type(ts) is float:

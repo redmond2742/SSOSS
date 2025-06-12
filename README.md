@@ -116,7 +116,7 @@ where ### is the frame number of the image.
 Use the frame number and the GPX recorded time to line up the best point to synchronize the video using the Sync method.
 
 ##### Sync.txt Logger
-Automatically saves frame number and timestamp to sync.txt file in the ./out/ directory so a log of when a video file was synchronized is saved.
+Automatically saves frame number and timestamp to sync.txt file in the ./out/ directory so a log of when a video file was synchronized is saved. Duplicate lines are ignored to prevent redundant entries.
 
 ### Sources of Error
 While SSOSS does provide approximate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
