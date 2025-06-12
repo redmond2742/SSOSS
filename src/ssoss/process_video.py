@@ -128,7 +128,18 @@ class ProcessVideo:
             "1",
             str(output_path),
         ]
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(cmd, check=True)
+        except FileNotFoundError:
+            # Fallback to OpenCV if ffmpeg is unavailable
+            cap = cv2.VideoCapture(str(self.video_filepath))
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+            ret, frame = cap.read()
+            cap.release()
+            if ret:
+                cv2.imwrite(str(output_path), frame)
+            else:
+                raise RuntimeError(f"Unable to read frame {frame_number}")
 
     @staticmethod
     def write_gps_exif(image_path: Path, location) -> None:

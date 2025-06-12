@@ -294,63 +294,71 @@ class GPXPoint:
             return min(abs(t_acc_neg), abs(t_acc_pos))
 
     def backflow(self, sro_df: pd.DataFrame, so_type):
-        """
-        after initial GPX points loaded, used intersection dataframe objects to calculate
-        values of interest.
+        """Vectorised computation of nearby static objects."""
 
-        :param sro_df: static road object loaded as dataframe.
-        :return:
-        """
+        def _haversine_feet(lat1, lon1, lat2, lon2):
+            lat1 = np.radians(lat1)
+            lon1 = np.radians(lon1)
+            lat2 = np.radians(lat2)
+            lon2 = np.radians(lon2)
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
+            return 2 * gpxgeo.EARTH_RADIUS * np.arcsin(np.sqrt(a)) * 3.28084
+
         if so_type == "intersection":
-            # empty lists
-            intersection_id = []
-            approach_leg = []
-            dist = []
-            approaching = []
+            intersections = sro_df["intersection_obj"].to_numpy()
+            if len(intersections) == 0:
+                self.intersection_approach_list = []
+                return
 
-            for index, row in sro_df.iterrows():
-                intersection = row["intersection_obj"]
-                distance_to_intersection = self.distance_to(intersection.get_location())
-                # TODO: consider add min trim also?
-                if distance_to_intersection > intersection.get_sd("max"):  # only load relevant distances
-                    pass
-                else:
-                    intersection_id.append(intersection.get_id_num())
-                    approach_leg.append(self.get_approach_leg(intersection))
-                    dist.append(distance_to_intersection)
-                    approaching.append(self.approaching(intersection))
+            lat = np.array([i.get_location().latitude for i in intersections])
+            lon = np.array([i.get_location().longitude for i in intersections])
+            sd_max = np.array([i.get_sd("max") for i in intersections], dtype=float)
 
-            temp_all_lists = zip(intersection_id, approach_leg, dist, approaching)
-            temp_sort_distance = sorted(temp_all_lists, key=itemgetter(2))  # sort by item 2/distance
-            temp_sort_approaching = sorted(temp_sort_distance, key=itemgetter(3), reverse=True)  # sort by item 3/approaching boolean
-            only_approaching_intersections = filter(lambda x: x[3] is True, temp_sort_approaching)  # filter out intersections not approached
-            self.intersection_approach_list = list(only_approaching_intersections)
-        
+            dist = _haversine_feet(lat, lon, self.p.latitude, self.p.longitude)
+            mask = dist <= sd_max
+            selected = intersections[mask]
+            dist = dist[mask]
+
+            results = [(
+                inter.get_id_num(),
+                self.get_approach_leg(inter),
+                d,
+                self.approaching(inter),
+            ) for inter, d in zip(selected, dist)]
+
+            temp_sort_distance = sorted(results, key=itemgetter(2))
+            temp_sort_approaching = sorted(temp_sort_distance, key=itemgetter(3), reverse=True)
+            self.intersection_approach_list = list(filter(lambda x: x[3], temp_sort_approaching))
+
         elif so_type == "generic_so":
-            #empty lists
-            generic_so_id = []
-            dist = []
-            approaching = []
-            buffer_dist = 150 #ft of buffer to add to static object sight distance
+            generics = sro_df["generic_so_obj"].to_numpy()
+            if len(generics) == 0:
+                self.generic_so_approach_list = []
+                return
 
-            count = 0
-            for index, row in sro_df.iterrows():
-                generic_so = row["generic_so_obj"]
-                distance_to_generic_so = self.distance_to(generic_so.get_location())
-                if distance_to_generic_so > generic_so.get_sd() + buffer_dist:
-                    pass
-                else:
-                    generic_so_id.append(generic_so.get_id_num())
-                    dist.append(distance_to_generic_so)
-                    approaching.append(self.approaching(generic_so))
-            
-            temp_all_lists = zip(generic_so_id, dist, approaching)
-            temp_sort_distance = sorted(temp_all_lists, key=itemgetter(1))  # sort by item 1/distance
-            temp_sort_approaching = sorted(temp_sort_distance, key=itemgetter(2), reverse=True)  # sort by item 2/approaching boolean
-            only_approaching_generic_so = filter(lambda x: x[2] is True, temp_sort_approaching)  # filter out generic_so not approached
-            self.generic_so_approach_list = list(only_approaching_generic_so)
+            lat = np.array([g.get_location().latitude for g in generics])
+            lon = np.array([g.get_location().longitude for g in generics])
+            sd = np.array([g.get_sd() for g in generics], dtype=float)
 
-        return;
+            dist = _haversine_feet(lat, lon, self.p.latitude, self.p.longitude)
+            buffer_dist = 150.0
+            mask = dist <= sd + buffer_dist
+            selected = generics[mask]
+            dist = dist[mask]
+
+            results = [(
+                so.get_id_num(),
+                d,
+                self.approaching(so),
+            ) for so, d in zip(selected, dist)]
+
+            temp_sort_distance = sorted(results, key=itemgetter(1))
+            temp_sort_approaching = sorted(temp_sort_distance, key=itemgetter(2), reverse=True)
+            self.generic_so_approach_list = list(filter(lambda x: x[2], temp_sort_approaching))
+
+        return
 
     def three_pt_approach(self,d0, d1, d2, approach_distance) -> bool:
         """ check if d0 & d1 points are before approach distance and d2 is after"""
