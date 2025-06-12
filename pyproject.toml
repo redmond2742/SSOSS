@@ -27,4 +27,5 @@ files = ["requirements.txt"]
 "Bug Tracker" = "https://github.com/redmond2742/ssoss/issues"
 
 [project.scripts]
-ssoss = "ssoss.ssoss_cli:main"
+ssoss = "ssoss.cli:cli"
+
