@@ -684,15 +684,15 @@ class ProcessRoadObjects:
 
         #  boundary conditions
         #  first point check
-        if ts < point_list.loc[0][0].get_timestamp():
+        if ts < point_list.iloc[0, 0].get_timestamp():
             return None
         #  last point check
-        if ts > point_list.loc[last_point][0].get_timestamp():
+        if ts > point_list.iloc[last_point, 0].get_timestamp():
             return None
 
         for i in range(len(point_list)-1):
-            if point_list.loc[i][0].get_timestamp() <= ts <= point_list.loc[i + 1][0].get_timestamp():
-                speed = self.avg_speed(point_list.loc[i][0].get_speed(), point_list.loc[i+1][0].get_speed())
+            if point_list.iloc[i, 0].get_timestamp() <= ts <= point_list.iloc[i + 1, 0].get_timestamp():
+                speed = self.avg_speed(point_list.iloc[i, 0].get_speed(), point_list.iloc[i+1, 0].get_speed())
                 break
         return speed
 
@@ -718,15 +718,15 @@ class ProcessRoadObjects:
         last_idx = len(points) - 1
 
         # Boundary checks
-        first_ts = points.loc[0][0].get_timestamp()
-        last_ts = points.loc[last_idx][0].get_timestamp()
+        first_ts = points.iloc[0, 0].get_timestamp()
+        last_ts = points.iloc[last_idx, 0].get_timestamp()
         if ts < first_ts or ts > last_ts:
             return None
 
         # Locate the two surrounding points
         for i in range(last_idx):
-            p0 = points.loc[i][0]
-            p1 = points.loc[i + 1][0]
+            p0 = points.iloc[i, 0]
+            p1 = points.iloc[i + 1, 0]
             t0 = p0.get_timestamp()
             t1 = p1.get_timestamp()
             if t0 <= ts <= t1:
