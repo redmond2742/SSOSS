@@ -58,6 +58,14 @@ class TestProcessVideo(unittest.TestCase):
             line = f.read().strip()
         self.assertEqual(line, f"{self.pv.video_filepath.stem},10,110.0")
 
+    def test_sync_does_not_duplicate_entry(self):
+        self.pv.sync(10, 110.0)
+        self.pv.sync(10, 110.0)
+        sync_file = pathlib.Path(self.pv.video_dir, "out", "sync.txt")
+        with open(sync_file) as f:
+            lines = f.readlines()
+        self.assertEqual(len(lines), 1)
+
     def _check_gps(self, image_path):
         exif = piexif.load(str(image_path))
         gps = exif.get("GPS", {})

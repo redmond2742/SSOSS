@@ -35,25 +35,32 @@ def args_static_obj_gpx_video(
         video = process_video.ProcessVideo(video_file.name)
         if vid_sync[0] and vid_sync[1]:
             video.sync(int(vid_sync[0]), vid_sync[1])
+
+            lb_flag = extra_out[0] if len(extra_out) > 0 else True
+            gif_flag = extra_out[1] if len(extra_out) > 1 else False
+            cleanup_flag = extra_out[2] if len(extra_out) > 2 else True
+            overwrite_flag = extra_out[3] if len(extra_out) > 3 else False
+
+            sig_kwargs = {"label_img": lb_flag, "gen_gif": gif_flag}
+            if len(extra_out) > 2:
+                sig_kwargs["cleanup"] = cleanup_flag
+            if len(extra_out) > 3:
+                sig_kwargs["overwrite"] = overwrite_flag
+
             if sightings and project.get_static_object_type() == "intersection":
                 print("extracting traffic signal sightings")
                 video.extract_sightings(
                     sightings,
                     project,
-                    label_img=extra_out[0],
-                    gen_gif=extra_out[1],
-                    cleanup=extra_out[2],
-                    overwrite=extra_out[3],
+                    **sig_kwargs,
                 )
+
             if sightings and project.get_static_object_type() == "generic static object":
                 print("extracting generic static object sightings")
                 video.extract_generic_so_sightings(
                     sightings,
                     project,
-                    label_img=extra_out[0],
-                    gen_gif=extra_out[1],
-                    cleanup=extra_out[2],
-                    overwrite=extra_out[3],
+                    **sig_kwargs,
                 )
         elif frame_extract[0] and frame_extract[1]:
             print("extracting frames...")

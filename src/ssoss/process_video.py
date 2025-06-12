@@ -76,9 +76,20 @@ class ProcessVideo:
         # ensure the out directory exists before attempting to write
         sync_txt_folder.mkdir(exist_ok=True, parents=True)
         sync_file = sync_txt_folder / "sync.txt"
-        # open in append mode so the file is created if it doesn't exist
-        with open(sync_file, "a") as f:
-            f.write(f"{self.video_filepath.stem},{frame},{ts}\n")
+
+        sync_line = f"{self.video_filepath.stem},{frame},{ts}"
+        write_line = True
+        if sync_file.exists():
+            with open(sync_file, "r") as existing:
+                for line in existing:
+                    if line.strip() == sync_line:
+                        write_line = False
+                        break
+
+        if write_line:
+            # open in append mode so the file is created if it doesn't exist
+            with open(sync_file, "a") as f:
+                f.write(sync_line + "\n")
 
         elapsed_time = frame / self.fps
         if type(ts) is float:
