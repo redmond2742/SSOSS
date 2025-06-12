@@ -31,30 +31,32 @@ def args_static_obj_gpx_video(
         process_road_objects.ProcessRoadObjects(gpx_filestring=gpx_file.name)
 
 
+    # ``extra_out`` may be shorter than four elements in tests
+    defaults = (True, False, True, False)
+    supplied_len = len(extra_out)
+    extra = list(extra_out) + list(defaults[supplied_len:])
+    extra_out = tuple(extra[:4])
+
     if video_file:
         video = process_video.ProcessVideo(video_file.name)
         if vid_sync[0] and vid_sync[1]:
             video.sync(int(vid_sync[0]), vid_sync[1])
             if sightings and project.get_static_object_type() == "intersection":
                 print("extracting traffic signal sightings")
-                video.extract_sightings(
-                    sightings,
-                    project,
-                    label_img=extra_out[0],
-                    gen_gif=extra_out[1],
-                    cleanup=extra_out[2],
-                    overwrite=extra_out[3],
-                )
+                kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
+                if supplied_len > 2:
+                    kwargs["cleanup"] = extra_out[2]
+                if supplied_len > 3:
+                    kwargs["overwrite"] = extra_out[3]
+                video.extract_sightings(sightings, project, **kwargs)
             if sightings and project.get_static_object_type() == "generic static object":
                 print("extracting generic static object sightings")
-                video.extract_generic_so_sightings(
-                    sightings,
-                    project,
-                    label_img=extra_out[0],
-                    gen_gif=extra_out[1],
-                    cleanup=extra_out[2],
-                    overwrite=extra_out[3],
-                )
+                kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
+                if supplied_len > 2:
+                    kwargs["cleanup"] = extra_out[2]
+                if supplied_len > 3:
+                    kwargs["overwrite"] = extra_out[3]
+                video.extract_generic_so_sightings(sightings, project, **kwargs)
         elif frame_extract[0] and frame_extract[1]:
             print("extracting frames...")
             video.extract_frames_between(frame_extract[0], frame_extract[1])
