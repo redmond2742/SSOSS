@@ -140,6 +140,16 @@ Use --gif-overwrite to replace an existing GIF and --no-gif-cleanup to keep the 
 
 Saves .gif file in ./out/[video filename]/gif/
 
+### Signal Visibility Layer
+Compile field photos into a map layer:
+```bash
+ssoss build-signal-layer \
+    --blocked-folder /data/photos/blocked_signals \
+    --clear-folder   /data/photos/clear_signals \
+    --output-dir     /data/outputs
+```
+Load `signal_visibility.gpkg` in QGIS using *Layer → Add Layer → Add Vector Layer*.
+
 ### Label Image
 Add a label to the bottom of the image by including the --label flag in the command line.
 

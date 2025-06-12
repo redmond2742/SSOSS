@@ -54,3 +54,9 @@ tzdata==2023.3
     # via pandas
 timezonefinder==6.5.9
     # via -r dev-requirements.in
+click==8.2.1
+    # via -r dev-requirements.in
+geopandas==1.1.0
+    # via -r dev-requirements.in
+folium==0.19.7
+    # via -r dev-requirements.in

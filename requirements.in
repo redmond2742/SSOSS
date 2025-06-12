@@ -11,4 +11,7 @@ pillow
 piexif
 python-dateutil
 timezonefinder
+click
+geopandas
+folium
 
