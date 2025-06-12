@@ -43,4 +43,7 @@ tqdm==4.66.1
 tzdata==2023.3
     # via pandas
 timezonefinder==6.5.9
+click==8.2.1
+geopandas==1.1.0
+folium==0.19.7
     # via -r requirements.in

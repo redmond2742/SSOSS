@@ -12,3 +12,6 @@ piexif
 python-dateutil
 timezonefinder
 icecream
+click
+geopandas
+folium
