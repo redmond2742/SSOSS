@@ -3,6 +3,7 @@ from ssoss.motion_road_object import *
 from ssoss.process_road_objects import *
 from ssoss.process_video import *
 from ssoss.static_road_object import *
+from ssoss.interpolation import position_at_time, time_at_distance
 import importlib.metadata
 try:
     from icecream import install
