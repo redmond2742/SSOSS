@@ -47,3 +47,9 @@ click==8.2.1
 geopandas==1.1.0
 folium==0.19.7
     # via -r requirements.in
+httpx==0.26.0
+fastapi==0.97.0
+uvicorn[standard]==0.27.0.post1
+python-multipart==0.0.20
+jinja2==3.1.6
+htmx==*
