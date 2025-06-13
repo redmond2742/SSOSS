@@ -3,8 +3,16 @@ import re
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from . import process_road_objects
-from . import process_video
+# When executed as part of the ``ssoss`` package, ``__package__`` will be set
+# and the relative imports below work as expected.  Running the module as a
+# stand-alone script (e.g. ``python ssoss_cli.py``) leaves ``__package__`` empty
+# which causes relative imports to fail.  Handle both execution modes here.
+if __package__ in {None, ""}:
+    import process_road_objects
+    import process_video
+else:
+    from . import process_road_objects
+    from . import process_video
 
 
 def _timestamp_from_filename(path: str) -> str:
