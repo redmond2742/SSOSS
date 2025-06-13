@@ -55,7 +55,9 @@ def cli_summary(descriptions, project, video):
     """Print a summary of extracted images and processing stats."""
 
     width = 70
+
     title = "SSOSS Summary Information"
+
     symbol = "="
 
     num_images = len(descriptions)
@@ -74,6 +76,7 @@ def cli_summary(descriptions, project, video):
             bearing = int(parts[1])
             intersections.setdefault(int_id, set()).add(bearing)
 
+
     num_inters_found = len(intersections)
     total_input_inters = (
         len(project.intersection_listDF.index)
@@ -86,6 +89,7 @@ def cli_summary(descriptions, project, video):
         else 0
     )
 
+
     multiplier = (18 * 60 / avg_vid) if avg_vid else 0
 
     summary = f"""
@@ -93,7 +97,9 @@ def cli_summary(descriptions, project, video):
 {" " * (int(width/2)-int(len(title)/2))}{title}
 {symbol * width}
 # Number of Images: {num_images}
+
 # Number of Intersections: {num_inters_found} ({inters_pct:.1f}%)
+
 # Avg Time per Image (GPX): {project.hr_min_sec(avg_gpx)}
 # Avg Time per Image (Video): {project.hr_min_sec(avg_vid)}
 # SSOSS Multiplier: {multiplier:.1f}X compared to field check
@@ -185,6 +191,7 @@ def main(argv=None):
     video_extract_group = parser.add_argument_group(
         "Extract Frames from Video File",
         "Enter Start and End Time (in seconds) for still images from video file",
+
     )
 
     # Static Object & GPX arguments
@@ -195,6 +202,7 @@ def main(argv=None):
         help=".csv file to process of static road objects (Intersections, signs, etc.)",
         type=argparse.FileType("r"),
     )
+
 
     so_and_gpx_group.add_argument(
         "-gpx",
