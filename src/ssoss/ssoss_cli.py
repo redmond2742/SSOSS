@@ -55,7 +55,7 @@ def cli_summary(descriptions, project, video):
     """Print a summary of extracted images and processing stats."""
 
     width = 70
-    title = "CLI SUMMARY"
+    title = "SSOSS Summary Information"
     symbol = "="
 
     num_images = len(descriptions)
@@ -74,13 +74,17 @@ def cli_summary(descriptions, project, video):
             bearing = int(parts[1])
             intersections.setdefault(int_id, set()).add(bearing)
 
-    intersection_lines = []
-    for int_id in sorted(intersections):
-        count = len(intersections[int_id])
-        pct = count / 4 * 100
-        intersection_lines.append(
-            f"# Intersection {int_id}: {count}/4 approaches ({pct:.1f}%)"
-        )
+    num_inters_found = len(intersections)
+    total_input_inters = (
+        len(project.intersection_listDF.index)
+        if getattr(project, "intersection_listDF", None) is not None
+        else 0
+    )
+    inters_pct = (
+        num_inters_found / total_input_inters * 100
+        if total_input_inters
+        else 0
+    )
 
     multiplier = (18 * 60 / avg_vid) if avg_vid else 0
 
@@ -89,8 +93,7 @@ def cli_summary(descriptions, project, video):
 {" " * (int(width/2)-int(len(title)/2))}{title}
 {symbol * width}
 # Number of Images: {num_images}
-# Number of Intersections: {len(intersections)}
-{chr(10).join(intersection_lines)}
+# Number of Intersections: {num_inters_found} ({inters_pct:.1f}%)
 # Avg Time per Image (GPX): {project.hr_min_sec(avg_gpx)}
 # Avg Time per Image (Video): {project.hr_min_sec(avg_vid)}
 # SSOSS Multiplier: {multiplier:.1f}X compared to field check
