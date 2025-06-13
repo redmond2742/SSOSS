@@ -103,3 +103,13 @@ def test_dispatch_extract_frames(monkeypatch, tmp_path):
 
     pv_instance.extract_frames_between.assert_called_once_with(1, 2)
 
+
+def test_autosync_uses_filename(run_cli, tmp_path):
+    vid = tmp_path / "09-15-2023--14-12-24.123-UTC.mov"
+    vid.write_text("data")
+
+    result = run_cli(["--video_file", str(vid), "--autosync"])
+
+    assert result["vid_sync"][0] == 1
+    assert result["vid_sync"][1].startswith("2023-09-15T14:12:24.123000")
+
