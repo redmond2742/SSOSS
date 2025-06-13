@@ -102,7 +102,7 @@ def args_static_obj_gpx_video(
             video.extract_frames_between(frame_extract[0], frame_extract[1])
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="Safe Sightings of Signs and Signals",
         description="Software to help verify visible traffic signs and signals using GPX and Video files",
@@ -216,7 +216,7 @@ def main():
     )
 
     # process args depending on filled in values
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     sync_input = ("", "")
     frames = ("", "")
