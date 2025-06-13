@@ -95,6 +95,9 @@ Collect data simultaneously:
                          --video_file vid.mov \
                          --sync_frame 456 \
                          --sync_timestamp 2022-10-24T14:21:54.32Z
+
+(ssoss_virtual_env) ssoss --video_file 09-15-2023--14-12-24.123-UTC.mov \
+                         --autosync
 ```
 
 #### Sync GPX & Video Process
