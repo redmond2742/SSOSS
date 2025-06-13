@@ -51,6 +51,54 @@ def _timestamp_from_filename(path: str) -> str:
     return dt.isoformat()
 
 
+def cli_summary(descriptions, project, video):
+    """Print a summary of extracted images and processing stats."""
+
+    width = 70
+    title = "CLI SUMMARY"
+    symbol = "="
+
+    num_images = len(descriptions)
+    gpx_dur = project.get_end_timestamp() - project.get_start_timestamp()
+    vid_dur = video.get_duration()
+
+    avg_gpx = gpx_dur / num_images if num_images else 0
+    avg_vid = vid_dur / num_images if num_images else 0
+
+    intersections = {}
+    for desc in descriptions:
+        prefix = desc.split("-", 1)[0]
+        parts = prefix.split(".")
+        if len(parts) >= 2:
+            int_id = int(parts[0])
+            bearing = int(parts[1])
+            intersections.setdefault(int_id, set()).add(bearing)
+
+    intersection_lines = []
+    for int_id in sorted(intersections):
+        count = len(intersections[int_id])
+        pct = count / 4 * 100
+        intersection_lines.append(
+            f"# Intersection {int_id}: {count}/4 approaches ({pct:.1f}%)"
+        )
+
+    multiplier = (18 * 60 / avg_vid) if avg_vid else 0
+
+    summary = f"""
+{symbol * width}
+{" " * (int(width/2)-int(len(title)/2))}{title}
+{symbol * width}
+# Number of Images: {num_images}
+# Number of Intersections: {len(intersections)}
+{chr(10).join(intersection_lines)}
+# Avg Time per Image (GPX): {project.hr_min_sec(avg_gpx)}
+# Avg Time per Image (Video): {project.hr_min_sec(avg_vid)}
+# SSOSS Multiplier: {multiplier:.1f}X compared to field check
+{symbol * width}
+"""
+    print(summary)
+
+
 def args_static_obj_gpx_video(
     generic_so_file="",
     gpx_file="",
@@ -97,7 +145,8 @@ def args_static_obj_gpx_video(
                     kwargs["cleanup"] = extra_out[2]
                 if supplied_len > 3:
                     kwargs["overwrite"] = extra_out[3]
-                video.extract_sightings(sightings, project, **kwargs)
+                desc_list = video.extract_sightings(sightings, project, **kwargs)
+                cli_summary(desc_list, project, video)
             if sightings and project.get_static_object_type() == "generic static object":
                 print("extracting generic static object sightings")
                 kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
@@ -105,7 +154,8 @@ def args_static_obj_gpx_video(
                     kwargs["cleanup"] = extra_out[2]
                 if supplied_len > 3:
                     kwargs["overwrite"] = extra_out[3]
-                video.extract_generic_so_sightings(sightings, project, **kwargs)
+                desc_list = video.extract_generic_so_sightings(sightings, project, **kwargs)
+                cli_summary(desc_list, project, video)
         elif frame_extract[0] and frame_extract[1]:
             print("extracting frames...")
             video.extract_frames_between(frame_extract[0], frame_extract[1])
