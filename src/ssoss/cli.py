@@ -3,7 +3,6 @@ import click
 
 from . import ssoss_cli
 from .signal_layer import build_signal_layer
-from .cli import review_photos
 
 
 @click.group(invoke_without_command=True, add_help_option=False)
@@ -28,7 +27,6 @@ def cli(ctx, show_help):
 
 
 cli.add_command(build_signal_layer)
-cli.add_command(review_photos)
 
 if __name__ == "__main__":
     cli()

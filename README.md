@@ -36,8 +36,7 @@ streamlined and repeatable process to monitor signs and signals along any roadwa
 * **ssoss_gui.py** - optional graphical front end built with Gooey that exposes the same features through a GUI.
 ## Requirements
 - Python 3.9
-- Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml, pillow, piexif, timezonefinder, fastapi, uvicorn, jinja2
-HTMX is loaded from its CDN when using the photo review web app.
+- Required libraries: pandas, numpy, opencv-python, geopy, gpxpy, imageio, tqdm, lxml, pillow, piexif, timezonefinder
 
 ## Installation
 Windows OS users can use the [Releases](https://github.com/redmond2742/ssoss/releases) to download an .exe of SSOSS for simple graphical usage. For Mac and Linux users, the command line option is described below.
