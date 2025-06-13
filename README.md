@@ -85,16 +85,16 @@ Collect data simultaneously:
 
 ### C. Data Processing: Argparse Command Line
 ```Shell
-(ssoss_virtual_env) python ssoss_cli.py --help
+(ssoss_virtual_env) ssoss --help
 ```
 
 #### Basic Usage
 ```Shell
-(ssoss_virtual_env) python ssoss_cli.py --static_objects signals.csv 
-                                        --gpx_file drive.gpx 
-                                        --video_file vid.mov 
-                                        --sync_frame 456 
-                                        --sync_timestamp 2022-10-24T14:21:54.32Z
+(ssoss_virtual_env) ssoss --static_objects signals.csv \
+                         --gpx_file drive.gpx \
+                         --video_file vid.mov \
+                         --sync_frame 456 \
+                         --sync_timestamp 2022-10-24T14:21:54.32Z
 ```
 
 #### Sync GPX & Video Process
@@ -104,9 +104,9 @@ video frames between two time values. When looking at the GPX points, the approx
 and all the frames can be extracted. This method is:
 
 ```Shell
-        (ssoss_virtual_env) python ssoss_cli.py -video_file vid.mov 
-                                                --frame_extract_start 4 
-                                                --frame_extract_end 6
+        (ssoss_virtual_env) ssoss -video_file vid.mov \
+                                 --frame_extract_start 4 \
+                                 --frame_extract_end 6
 ```
 
 Check the printed logs to see the saved output location. Default is:
