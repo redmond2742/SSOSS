@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import csv, math
+import textwrap
+import statistics
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -638,38 +640,45 @@ class ProcessRoadObjects:
         tot_sec = round(self.get_end_timestamp() - self.get_start_timestamp(), 2)
         tot_distance = gpx_df.iloc[last_index, 0].get_cumulative_distance()
 
-        # display values
-        width = int(70)
+        if self.sum_total_points > 0:
+            conv = gpx_df.iloc[0, 0].FTPStoMPH
+            spd_vals = [gpx_df.iloc[i, 0].get_speed() for i in range(self.sum_total_points)]
+            spd_mph = [s * conv for s in spd_vals]
+            avg_speed = round((tot_distance / tot_sec) * conv, 2) if tot_sec > 0 else 0.0
+            max_speed = round(max(spd_mph), 2)
+            min_speed = round(min(spd_mph), 2)
+            if self.sum_total_points > 1:
+                acc_vals = [gpx_df.iloc[i, 0].acceleration() for i in range(self.sum_total_points - 1)]
+                avg_acc = round(statistics.mean(acc_vals) * conv, 2)
+            else:
+                avg_acc = 0.0
+        else:
+            avg_speed = max_speed = min_speed = avg_acc = 0.0
+
+        width = 70
         title = "GPX SUMMARY"
         symbol = "-"
 
-        summary = f"""
-        {symbol * width}
-        {" " * (int(width/2)-int(len(title)/2))}{title}
-        {symbol * width}
-        # GPX File:: {self.gpx_file}
-        # Using GPX version: {self.gpx_ver}
-        # Start time: {datetime.fromtimestamp(self.get_start_timestamp(), tz=None)}
-        # End time:   {datetime.fromtimestamp(self.get_end_timestamp(), tz=None)}
-        # Total duration: {self.hr_min_sec(tot_sec)}
-        # Total distance: {self.simplify_distance(tot_distance)}
-        # Number of data points: {self.sum_total_points}
-        # Avg. Time Gap between data points: {avg_time_gap} Seconds
-        
-        {symbol * width}
-        """
-        # TODO:
-        # {symbol * width}
-        # IF self.intersection_approaches > 0
-        # Total intersection approaches: {self.intersection_approaches}
-        # Avg. Time per approach: {tot_sec/self.intersection_approaches}
-        # Avg. feet driven per approach: {tot_distance/self.intersection_approaches}
-        # difference in GPX and Video file start times and lengths of times
-        # Number of images captured:
-        # Number of intersections captures: X/ Total intersections (xx.x%)
-        # Number of approaches captured
-        # Approaches captures for duration of GPX file and Video File -> (images/time) (productivity ratio)
-        # -------------------------------------------------------------------------------
+        summary = textwrap.dedent(
+            f"""
+            {symbol * width}
+            {title.center(width)}
+            {symbol * width}
+            GPX File: {self.gpx_file}
+            Using GPX version: {self.gpx_ver}
+            Start time: {datetime.fromtimestamp(self.get_start_timestamp(), tz=None)}
+            End time:   {datetime.fromtimestamp(self.get_end_timestamp(), tz=None)}
+            Total duration: {self.hr_min_sec(tot_sec)}
+            Total distance: {self.simplify_distance(tot_distance)}
+            Number of data points: {self.sum_total_points}
+            Avg. Time Gap between data points: {avg_time_gap} Seconds
+            Avg. Speed: {avg_speed} MPH
+            Max Speed: {max_speed} MPH
+            Min Speed: {min_speed} MPH
+            Avg. Acceleration: {avg_acc} MPH/s
+            {symbol * width}
+            """
+        )
 
         print(summary)
 
