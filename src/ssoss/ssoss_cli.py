@@ -1,6 +1,6 @@
 import argparse
-import process_road_objects
-import process_video
+from . import process_road_objects
+from . import process_video
 
 
 def args_static_obj_gpx_video(
