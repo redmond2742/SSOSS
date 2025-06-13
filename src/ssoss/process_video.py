@@ -219,6 +219,8 @@ class ProcessVideo:
         if gen_gif:
             self.generate_gif(desc_timestamps, project, cleanup=cleanup, overwrite=overwrite)
 
+        return generic_so_desc
+
     def extract_sightings(
         self, desc_timestamps, project, label_img=True, gen_gif=False, cleanup=True, overwrite=False
     ):
@@ -249,11 +251,8 @@ class ProcessVideo:
             self.img_overlay_info_box(self.video_filename, project)
         if gen_gif:
             self.generate_gif(desc_timestamps, project, cleanup=cleanup, overwrite=overwrite)
-        """
-        if bbox:
-        self.img_overlay_bbox(description_list,project)
-    
-        """    
+
+        return intersection_desc
      
 
     #  TODO: convert to start_sec, start_min=0, end_sec, end_min=0, folder="")
