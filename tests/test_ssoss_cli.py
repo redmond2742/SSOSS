@@ -79,7 +79,7 @@ def test_dispatch_sync_calls(monkeypatch, tmp_path):
             extra_out=(True, False),
         )
 
-    pv_instance.sync.assert_called_once_with(1, "ts")
+    pv_instance.sync.assert_called_once_with(1, "ts", autosync=False)
     pv_instance.extract_sightings.assert_called_once_with(
         ["sig"], pr_instance, label_img=True, gen_gif=False
     )

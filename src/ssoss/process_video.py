@@ -37,6 +37,7 @@ class ProcessVideo:
         self.duration = self.get_duration()
         self.start_time = 0
         self.capture = ""
+        self.sync_source = "Not synced"
 
 
         self.vid_summary(vid_summary=True)
@@ -67,11 +68,13 @@ class ProcessVideo:
         else:
             return timedelta(seconds=self.duration)
 
-    def sync(self, frame: int, ts):
+    def sync(self, frame: int, ts, autosync: bool = False):
         """
         finds start time of video based on frame and timestamp
             appends frame # and timestamp to sync.txt with video filename for reference
             duplicate entries are ignored
+            ``autosync`` indicates the timestamp was derived from the
+            filename rather than provided explicitly
         """
         sync_txt_folder = Path(self.video_dir, "out")
         # ensure the out directory exists before attempting to write
@@ -93,6 +96,10 @@ class ProcessVideo:
         else:
             t_temp = (dateutil.parser.isoparse(ts))  #  isoparse parses ISO-8601 datetime string into datetime.datetime
             start_time = t_temp.replace(tzinfo=timezone.utc).timestamp() - elapsed_time
+        if autosync:
+            self.sync_source = "Auto sync using filename timestamp"
+        else:
+            self.sync_source = f"Frame {frame} at {ts}"
         self.set_start_utc(start_time)
         self.vid_summary(vid_summary=False, sync=True)
         return None
@@ -438,6 +445,8 @@ class ProcessVideo:
                     {symbol * width}
                     {" " * (int(width/2)-int(len(sync_title)/2))}{sync_title}
                     {symbol * width}
+                    # Video File: {self.video_filename}
+                    # Sync Source: {self.sync_source}
                     # Start Time: {datetime.fromtimestamp(self.start_time, tz=None)}
                     # End Time:   {datetime.fromtimestamp(self.start_time + self.get_duration(), tz=None)}
                     {symbol * width}

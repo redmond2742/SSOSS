@@ -58,6 +58,7 @@ def args_static_obj_gpx_video(
     vid_sync=("", ""),
     frame_extract=("", ""),
     extra_out=(True, False, True, False),
+    autosync=False,
 ):
 
     sightings = ""
@@ -88,7 +89,7 @@ def args_static_obj_gpx_video(
     if video_file:
         video = process_video.ProcessVideo(video_file.name)
         if vid_sync[0] and vid_sync[1]:
-            video.sync(int(vid_sync[0]), vid_sync[1])
+            video.sync(int(vid_sync[0]), vid_sync[1], autosync=autosync)
             if sightings and project.get_static_object_type() == "intersection":
                 print("extracting traffic signal sightings")
                 kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
@@ -259,7 +260,8 @@ def main(argv=None):
                               video_file = args.video_file,
                               vid_sync = sync_input,
                               frame_extract = frames,
-                              extra_out = lb_gif_flags
+                              extra_out = lb_gif_flags,
+                              autosync = args.autosync
                               )
 
 
