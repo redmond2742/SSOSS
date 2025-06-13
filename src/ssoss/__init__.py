@@ -16,5 +16,5 @@ try:
     __version__ = importlib.metadata.version("ssoss")
 except importlib.metadata.PackageNotFoundError:
     # Package metadata not found when running from source
-    __version__ = "1.0"
+    __version__ = "1.1"
 
