@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  pull_request:       # runs on every PR
+  push:               # …and on direct pushes to monitored branches
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest          # free Linux runner
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]   # test against multiple Py versions
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'              # speeds up re-runs
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt  # if you separate test deps
+
+      - name: Run pytest
+        run: pytest -q                 # or `pytest --cov` for coverage
+

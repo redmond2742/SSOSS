@@ -3,7 +3,7 @@
 build/
 dist/
 .DS_Store
-
+.env/
 /src/.DS_Store
 /src/ssoss/.DS_Store
 /src/ssoss/.idea/
