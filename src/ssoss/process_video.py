@@ -39,6 +39,10 @@ class ProcessVideo:
         self.capture = ""
         self.sync_source = "Not synced"
 
+        self.sync_frame = None
+        self.sync_timestamp = None
+
+
 
         self.vid_summary(vid_summary=True)
 
@@ -101,6 +105,8 @@ class ProcessVideo:
         else:
             self.sync_source = f"Frame {frame} at {ts}"
         self.set_start_utc(start_time)
+        self.sync_frame = frame
+        self.sync_timestamp = ts
         self.vid_summary(vid_summary=False, sync=True)
         return None
 
@@ -415,6 +421,10 @@ class ProcessVideo:
         file_byte = os.path.getsize(self.video_filepath)
         return self.sizeConvert(file_byte)
 
+    def get_filesize_bytes(self):
+        """Return the raw file size in bytes."""
+        return os.path.getsize(self.video_filepath)
+
     def vid_summary(self, vid_summary, sync=False):
         #  display values
         width = 70
@@ -427,6 +437,11 @@ class ProcessVideo:
             # get vcap property
             vid_width = vid_file.get(cv2.CAP_PROP_FRAME_WIDTH)  # float `width`
             vid_height = vid_file.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float `height`
+        else:
+            vid_width = vid_height = 0
+        file_bytes = self.get_filesize_bytes()
+        data_rate = round(file_bytes / self.get_duration() / (1024 * 1024), 2)
+        avg_frame_size = round(file_bytes / self.frame_count / 1024, 2)
 
         summary = f"""
                 {symbol * width}
@@ -438,6 +453,8 @@ class ProcessVideo:
                 # Frames Per Second: {self.fps}
                 # Total Number of Frames: {self.frame_count:,}
                 # Total Duration: {self.hr_min_sec(self.get_duration())}
+                # Avg. Frame Size: {avg_frame_size} KB
+                # Data Rate: {data_rate} MB/sec
                 {symbol * width}
                 """
 
@@ -445,10 +462,17 @@ class ProcessVideo:
                     {symbol * width}
                     {" " * (int(width/2)-int(len(sync_title)/2))}{sync_title}
                     {symbol * width}
+
                     # Video File: {self.video_filename}
                     # Sync Source: {self.sync_source}
+
+                    # Sync Frame: {self.sync_frame}
+                    # Sync Timestamp: {self.sync_timestamp}
+
                     # Start Time: {datetime.fromtimestamp(self.start_time, tz=None)}
                     # End Time:   {datetime.fromtimestamp(self.start_time + self.get_duration(), tz=None)}
+                    # Avg. Frame Size: {avg_frame_size} KB
+                    # Data Rate: {data_rate} MB/sec
                     {symbol * width}
                     """
         if vid_summary:
