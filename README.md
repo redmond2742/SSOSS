@@ -47,9 +47,9 @@ To install SSOSS:
     python3 -m pip install ssoss
 
 ## Usage
-To use the SSOSS program, 
+To use the SSOSS program,
 1. Collect and Setup Data as described in section A.1 or A.2 and B below.
-2. Syncronize the video as described in [the SSOSS How To Video](https://youtu.be/R7qm3d8Ego8) and [mentioned below](https://github.com/redmond2742/ssoss#sync-gpx--video-process).
+2. Synchronize the video as described in [the SSOSS How To Video](https://youtu.be/R7qm3d8Ego8) and [mentioned below](https://github.com/redmond2742/ssoss#sync-gpx--video-process).
 2. Follow the commandline commands in Part C or use the Windows OS GUI interface.
 
 ### A.1 Input File: Intersection CSV File
@@ -102,7 +102,7 @@ Collect data simultaneously:
 
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has
-a helper function to perform a accurate synchronization time. The extract_frames_between method can export all the 
+a helper function to perform an accurate synchronization time. The extract_frames_between method can export all the 
 video frames between two time values. When looking at the GPX points, the approximate video time can be estimated 
 and all the frames can be extracted. This method is:
 
@@ -122,21 +122,21 @@ Use the frame number and the GPX recorded time to line up the best point to sync
 Automatically saves frame number and timestamp to sync.txt file in the ./out/ directory so a log of when a video file was synchronized is saved. Duplicate lines are ignored to prevent redundant entries.
 
 ### Sources of Error
-While SSOSS does provide approximate sight distance images, their are various sources of error that should be try to be minimized. Here are the major sources of error and how they can be mitigated.
+While SSOSS does provide approximate sight distance images, there are various sources of error that should be minimized. Here are the major sources of error and how they can be mitigated.
 
 
 | **Error Source**      | **Approximate Error Amount** | **Comment**                                                                                                |
 |-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------|
 | GPS                   | 9 ft +                       | Inherent with using GPS. Keep clear signal of GPS if possible                                              |
 | Stop Bar              | 20 - 80 ft                   | Depends on size of intersection. Using stop bar points can eliminate this error.                           |
-| Vehicle Motion        | 0 - 30 ft                    | Significant acceleration and deacceleration can cause error in finding the sight distance accuratly        |
+| Vehicle Motion        | 0 - 30 ft                    | Significant acceleration and deceleration can cause error in finding the sight distance accurately        |
 | Video View of Roadway | 0 - 25 ft                    | Calibrating the closest visible ground spot as seen on the video can eliminate this error. Typically 20ft. |
-| Video Time Sync       | 0 ft +                       | If the syncronization process is not done accuratly, this can be a huge source of error.                   |
+| Video Time Sync       | 0 ft +                       | If the synchronization process is not done accurately, this can be a huge source of error.                   |
 
 ## Optional Tools
 
 ### GIF Creator
-Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus or an few frames are obstructed.
+Create a gif from multiple images around the sight distance location. This can be helpful if the lens is out of focus or a few frames are obstructed.
 
 Include the -- gif flag in the command line to create. Note: this requires additional processing time for large video files.
 Use --gif-overwrite to replace an existing GIF and --no-gif-cleanup to keep the extracted frames.
