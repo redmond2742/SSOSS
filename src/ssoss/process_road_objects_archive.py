@@ -236,7 +236,7 @@ class ProcessRoadObjects:
                         Intersection(
                             int(row[0]),
                             tuple((str(row[1]), str(row[2]))),
-                            Point(float(row[3]), float(row[4])),
+                            geopy.Point(float(row[3]), float(row[4])),
                             spd=tuple(
                                 (
                                     int(row[5]),
@@ -287,10 +287,10 @@ class ProcessRoadObjects:
                                 float(row[12]),
                             )
                         ),
-                        stop_bar_nb=tuple((Point(row[13], row[14]), Point(row[15], row[16]))),
-                        stop_bar_eb=tuple((Point(row[17], row[18]), Point(row[19], row[20]))),
-                        stop_bar_sb=tuple((Point(row[21], row[22]), Point(row[23], row[24]))),
-                        stop_bar_wb=tuple((Point(row[25], row[26]), Point(row[27], row[28]))),
+                        stop_bar_nb=tuple((geopy.Point(row[13], row[14]), geopy.Point(row[15], row[16]))),
+                        stop_bar_eb=tuple((geopy.Point(row[17], row[18]), geopy.Point(row[19], row[20]))),
+                        stop_bar_sb=tuple((geopy.Point(row[21], row[22]), geopy.Point(row[23], row[24]))),
+                        stop_bar_wb=tuple((geopy.Point(row[25], row[26]), geopy.Point(row[27], row[28]))),
                     )
                     temp_i.set_sb_pts_bools((nb_sb_pts,eb_sb_pts,sb_sb_pts,wb_sb_pts))
                     self.intersection_load["intersection_obj"].append(temp_i)
@@ -336,7 +336,7 @@ class ProcessRoadObjects:
         gpx_load = {"gpx_pt": []}
 
         # initialize starting variables if GPX v1.1 needs speed calcs
-        pnt1 = Point()
+        pnt1 = geopy.Point()
         t1 = None
 
         if use_pickle and Path(self.pickle_file).is_file():
@@ -386,7 +386,7 @@ class ProcessRoadObjects:
                             if point.speed is not None:
                                 point.speed = extra_data["speed"]
 
-                    p = Point(
+                    p = geopy.Point(
                         latitude=point.latitude,
                         longitude=point.longitude,
                     )
@@ -716,7 +716,7 @@ class ProcessRoadObjects:
 
         Returns
         -------
-        Point or None
+        geopy.Point or None
             The interpolated location or ``None`` if ``ts`` is outside the
             range of the loaded GPX data.
         """
@@ -750,7 +750,7 @@ class ProcessRoadObjects:
                 lon = p0.get_location().longitude + ratio * (
                     p1.get_location().longitude - p0.get_location().longitude
                 )
-                return Point(lat, lon)
+                return geopy.Point(lat, lon)
 
         return None
 
