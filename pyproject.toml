@@ -28,4 +28,5 @@ files = ["requirements.txt"]
 
 [project.scripts]
 ssoss = "ssoss.cli:cli"
+ssoss-web = "ssoss.web_api:main"
 
