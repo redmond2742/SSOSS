@@ -5,7 +5,11 @@ import tempfile
 import shutil
 from typing import Optional
 
-from . import ssoss_cli
+# Allow running as a script without the ssoss package context
+if __package__ in {None, ""}:
+    import ssoss_cli
+else:
+    from . import ssoss_cli
 
 app = FastAPI(title="SSOSS Web API")
 

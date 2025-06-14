@@ -15,6 +15,5 @@ icecream
 click
 geopandas
 folium
-
 fastapi
 uvicorn
