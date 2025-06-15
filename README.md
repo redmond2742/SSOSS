@@ -99,6 +99,8 @@ Collect data simultaneously:
 (ssoss_virtual_env) ssoss --video_file 09-15-2023--14-12-24.123-UTC.mov \
                          --autosync
 ```
+The timezone portion of the filename is preserved as an offset; the
+timestamp itself is not shifted.
 
 #### Sync GPX & Video Process
 Synchronizing the GPX file and the video could be one of the largest sources of error. The ProcessVideo Class has

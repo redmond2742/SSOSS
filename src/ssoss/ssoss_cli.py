@@ -1,5 +1,6 @@
 import argparse
 import re
+
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -15,12 +16,16 @@ else:
     from . import process_video
 
 
+
+
 def _timestamp_from_filename(path: str) -> str:
     """Extract ISO 8601 timestamp from ``path``.
 
     The filename should contain a timestamp formatted as
     ``MM-DD-YYYY--HH-MM-SS.sss-ZZZ`` where ``ZZZ`` is a timezone
-    abbreviation such as ``UTC`` or ``PDT``.
+    abbreviation such as ``UTC`` or ``PDT``. The time itself is not shifted
+    based on the timezone; the offset is simply attached to the parsed
+    timestamp.
     """
 
     base = Path(path).stem
@@ -35,77 +40,22 @@ def _timestamp_from_filename(path: str) -> str:
     zone = m.group("zone")
 
     dt = datetime.strptime(ts_str, "%m-%d-%Y--%H-%M-%S.%f")
-    zone_map = {
-        "UTC": "UTC",
-        "PST": "America/Los_Angeles",
-        "PDT": "America/Los_Angeles",
-        "MST": "America/Denver",
-        "MDT": "America/Denver",
-        "CST": "America/Chicago",
-        "CDT": "America/Chicago",
-        "EST": "America/New_York",
-        "EDT": "America/New_York",
+    zone = zone.upper()
+    offset_map = {
+        "UTC": 0,
+        "PST": -8,
+        "PDT": -7,
+        "MST": -7,
+        "MDT": -6,
+        "CST": -6,
+        "CDT": -5,
+        "EST": -5,
+        "EDT": -4,
     }
-    tz_name = zone_map.get(zone.upper(), "UTC")
-    dt = dt.replace(tzinfo=ZoneInfo(tz_name))
+    hours = offset_map.get(zone, 0)
+    tz = timezone(timedelta(hours=hours))
+    dt = dt.replace(tzinfo=tz)
     return dt.isoformat()
-
-
-def cli_summary(descriptions, project, video):
-    """Print a summary of extracted images and processing stats."""
-
-    width = 70
-
-    title = "SSOSS Summary Information"
-
-    symbol = "="
-
-    num_images = len(descriptions)
-    gpx_dur = project.get_end_timestamp() - project.get_start_timestamp()
-    vid_dur = video.get_duration()
-
-    avg_gpx = gpx_dur / num_images if num_images else 0
-    avg_vid = vid_dur / num_images if num_images else 0
-
-    intersections = {}
-    for desc in descriptions:
-        prefix = desc.split("-", 1)[0]
-        parts = prefix.split(".")
-        if len(parts) >= 2:
-            int_id = int(parts[0])
-            bearing = int(parts[1])
-            intersections.setdefault(int_id, set()).add(bearing)
-
-
-    num_inters_found = len(intersections)
-    total_input_inters = (
-        len(project.intersection_listDF.index)
-        if getattr(project, "intersection_listDF", None) is not None
-        else 0
-    )
-    inters_pct = (
-        num_inters_found / total_input_inters * 100
-        if total_input_inters
-        else 0
-    )
-
-
-    multiplier = (18 * 60 / avg_vid) if avg_vid else 0
-
-    summary = f"""
-{symbol * width}
-{" " * (int(width/2)-int(len(title)/2))}{title}
-{symbol * width}
-# Number of Images: {num_images}
-
-# Number of Intersections: {num_inters_found} ({inters_pct:.1f}%)
-
-# Avg Time per Image (GPX): {project.hr_min_sec(avg_gpx)}
-# Avg Time per Image (Video): {project.hr_min_sec(avg_vid)}
-# SSOSS Multiplier: {multiplier:.1f}X compared to field check
-{symbol * width}
-"""
-    print(summary)
 
 
 def args_static_obj_gpx_video(
