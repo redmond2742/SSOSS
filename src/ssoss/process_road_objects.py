@@ -2,11 +2,14 @@
 # coding: utf-8
 
 import csv, math
+import textwrap
+import statistics
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
-import geopy
+
+from geopy import Point
 from geopy.distance import geodesic, Distance
 
 import gpxpy
@@ -192,7 +195,7 @@ class ProcessRoadObjects:
                     self.generic_so_load["generic_so_obj"].append(GenericStaticObject(
                         id_num = int(row[0]),
                         street_name = str(row[1]),
-                        pt = geopy.Point(float(row[2]),float(row[3])),
+                        pt = Point(float(row[2]),float(row[3])),
                         bearing = row[4],
                         description = str(row[5]),
                         distance_ft = float(row[6])            
@@ -233,7 +236,7 @@ class ProcessRoadObjects:
                         Intersection(
                             int(row[0]),
                             tuple((str(row[1]), str(row[2]))),
-                            geopy.Point(float(row[3]), float(row[4])),
+                            Point(float(row[3]), float(row[4])),
                             spd=tuple(
                                 (
                                     int(row[5]),
@@ -267,7 +270,7 @@ class ProcessRoadObjects:
                     temp_i = Intersection(
                         int(row[0]),
                         tuple((str(row[1]), str(row[2]))),
-                        geopy.Point(float(row[3]), float(row[4])),
+                        Point(float(row[3]), float(row[4])),
                         spd=tuple(
                             (
                                 int(row[5]),
@@ -284,10 +287,10 @@ class ProcessRoadObjects:
                                 float(row[12]),
                             )
                         ),
-                        stop_bar_nb=tuple((geopy.Point(row[13], row[14]), geopy.Point(row[15], row[16]))),
-                        stop_bar_eb=tuple((geopy.Point(row[17], row[18]), geopy.Point(row[19], row[20]))),
-                        stop_bar_sb=tuple((geopy.Point(row[21], row[22]), geopy.Point(row[23], row[24]))),
-                        stop_bar_wb=tuple((geopy.Point(row[25], row[26]), geopy.Point(row[27], row[28]))),
+                        stop_bar_nb=tuple((Point(row[13], row[14]), Point(row[15], row[16]))),
+                        stop_bar_eb=tuple((Point(row[17], row[18]), Point(row[19], row[20]))),
+                        stop_bar_sb=tuple((Point(row[21], row[22]), Point(row[23], row[24]))),
+                        stop_bar_wb=tuple((Point(row[25], row[26]), Point(row[27], row[28]))),
                     )
                     temp_i.set_sb_pts_bools((nb_sb_pts,eb_sb_pts,sb_sb_pts,wb_sb_pts))
                     self.intersection_load["intersection_obj"].append(temp_i)
@@ -333,7 +336,7 @@ class ProcessRoadObjects:
         gpx_load = {"gpx_pt": []}
 
         # initialize starting variables if GPX v1.1 needs speed calcs
-        pnt1 = geopy.Point()
+        pnt1 = Point()
         t1 = None
 
         if use_pickle and Path(self.pickle_file).is_file():
@@ -383,7 +386,7 @@ class ProcessRoadObjects:
                             if point.speed is not None:
                                 point.speed = extra_data["speed"]
 
-                    p = geopy.Point(
+                    p = Point(
                         latitude=point.latitude,
                         longitude=point.longitude,
                     )
@@ -638,38 +641,45 @@ class ProcessRoadObjects:
         tot_sec = round(self.get_end_timestamp() - self.get_start_timestamp(), 2)
         tot_distance = gpx_df.iloc[last_index, 0].get_cumulative_distance()
 
-        # display values
-        width = int(70)
+        if self.sum_total_points > 0:
+            conv = gpx_df.iloc[0, 0].FTPStoMPH
+            spd_vals = [gpx_df.iloc[i, 0].get_speed() for i in range(self.sum_total_points)]
+            spd_mph = [s * conv for s in spd_vals]
+            avg_speed = round((tot_distance / tot_sec) * conv, 2) if tot_sec > 0 else 0.0
+            max_speed = round(max(spd_mph), 2)
+            min_speed = round(min(spd_mph), 2)
+            if self.sum_total_points > 1:
+                acc_vals = [gpx_df.iloc[i, 0].acceleration() for i in range(self.sum_total_points - 1)]
+                avg_acc = round(statistics.mean(acc_vals) * conv, 2)
+            else:
+                avg_acc = 0.0
+        else:
+            avg_speed = max_speed = min_speed = avg_acc = 0.0
+
+        width = 70
         title = "GPX SUMMARY"
         symbol = "-"
 
-        summary = f"""
-        {symbol * width}
-        {" " * (int(width/2)-int(len(title)/2))}{title}
-        {symbol * width}
-        # GPX File:: {self.gpx_file}
-        # Using GPX version: {self.gpx_ver}
-        # Start time: {datetime.fromtimestamp(self.get_start_timestamp(), tz=None)}
-        # End time:   {datetime.fromtimestamp(self.get_end_timestamp(), tz=None)}
-        # Total duration: {self.hr_min_sec(tot_sec)}
-        # Total distance: {self.simplify_distance(tot_distance)}
-        # Number of data points: {self.sum_total_points}
-        # Avg. Time Gap between data points: {avg_time_gap} Seconds
-        
-        {symbol * width}
-        """
-        # TODO:
-        # {symbol * width}
-        # IF self.intersection_approaches > 0
-        # Total intersection approaches: {self.intersection_approaches}
-        # Avg. Time per approach: {tot_sec/self.intersection_approaches}
-        # Avg. feet driven per approach: {tot_distance/self.intersection_approaches}
-        # difference in GPX and Video file start times and lengths of times
-        # Number of images captured:
-        # Number of intersections captures: X/ Total intersections (xx.x%)
-        # Number of approaches captured
-        # Approaches captures for duration of GPX file and Video File -> (images/time) (productivity ratio)
-        # -------------------------------------------------------------------------------
+        summary = textwrap.dedent(
+            f"""
+            {symbol * width}
+            {title.center(width)}
+            {symbol * width}
+            GPX File: {self.gpx_file}
+            Using GPX version: {self.gpx_ver}
+            Start time: {datetime.fromtimestamp(self.get_start_timestamp(), tz=None)}
+            End time:   {datetime.fromtimestamp(self.get_end_timestamp(), tz=None)}
+            Total duration: {self.hr_min_sec(tot_sec)}
+            Total distance: {self.simplify_distance(tot_distance)}
+            Number of data points: {self.sum_total_points}
+            Avg. Time Gap between data points: {avg_time_gap} Seconds
+            Avg. Speed: {avg_speed} MPH
+            Max Speed: {max_speed} MPH
+            Min Speed: {min_speed} MPH
+            Avg. Acceleration: {avg_acc} MPH/s
+            {symbol * width}
+            """
+        )
 
         print(summary)
 
@@ -706,7 +716,7 @@ class ProcessRoadObjects:
 
         Returns
         -------
-        geopy.Point or None
+        Point or None
             The interpolated location or ``None`` if ``ts`` is outside the
             range of the loaded GPX data.
         """
@@ -740,7 +750,7 @@ class ProcessRoadObjects:
                 lon = p0.get_location().longitude + ratio * (
                     p1.get_location().longitude - p0.get_location().longitude
                 )
-                return geopy.Point(lat, lon)
+                return Point(lat, lon)
 
         return None
 

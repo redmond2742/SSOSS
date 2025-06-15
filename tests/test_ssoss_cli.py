@@ -79,7 +79,7 @@ def test_dispatch_sync_calls(monkeypatch, tmp_path):
             extra_out=(True, False),
         )
 
-    pv_instance.sync.assert_called_once_with(1, "ts")
+    pv_instance.sync.assert_called_once_with(1, "ts", autosync=False)
     pv_instance.extract_sightings.assert_called_once_with(
         ["sig"], pr_instance, label_img=True, gen_gif=False
     )
@@ -114,6 +114,7 @@ def test_autosync_uses_filename(run_cli, tmp_path):
     assert result["vid_sync"][1].startswith("2023-09-15T14:12:24.123000")
 
 
+
 def test_autosync_preserves_timezone_offset(run_cli, tmp_path):
     vid = tmp_path / "09-15-2023--14-12-24.123-PST.mov"
     vid.write_text("data")
@@ -121,4 +122,5 @@ def test_autosync_preserves_timezone_offset(run_cli, tmp_path):
     result = run_cli(["--video_file", str(vid), "--autosync"])
 
     assert result["vid_sync"][1].endswith("-08:00")
+
 

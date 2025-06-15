@@ -14,7 +14,7 @@ imageio==2.31.5
     # via -r requirements.in
 lxml==4.9.3
     # via -r requirements.in
-numpy==1.26.0
+numpy>=1.26,<2.0
     # via
     #   -r requirements.in
     #   imageio

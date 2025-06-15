@@ -1,9 +1,21 @@
 import argparse
 import re
-from datetime import datetime, timedelta, timezone
+
+from datetime import datetime
 from pathlib import Path
-from . import process_road_objects
-from . import process_video
+from zoneinfo import ZoneInfo
+# When executed as part of the ``ssoss`` package, ``__package__`` will be set
+# and the relative imports below work as expected.  Running the module as a
+# stand-alone script (e.g. ``python ssoss_cli.py``) leaves ``__package__`` empty
+# which causes relative imports to fail.  Handle both execution modes here.
+if __package__ in {None, ""}:
+    import process_road_objects
+    import process_video
+else:
+    from . import process_road_objects
+    from . import process_video
+
+
 
 
 def _timestamp_from_filename(path: str) -> str:
@@ -53,6 +65,7 @@ def args_static_obj_gpx_video(
     vid_sync=("", ""),
     frame_extract=("", ""),
     extra_out=(True, False, True, False),
+    autosync=False,
 ):
 
     sightings = ""
@@ -83,7 +96,7 @@ def args_static_obj_gpx_video(
     if video_file:
         video = process_video.ProcessVideo(video_file.name)
         if vid_sync[0] and vid_sync[1]:
-            video.sync(int(vid_sync[0]), vid_sync[1])
+            video.sync(int(vid_sync[0]), vid_sync[1], autosync=autosync)
             if sightings and project.get_static_object_type() == "intersection":
                 print("extracting traffic signal sightings")
                 kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
@@ -91,7 +104,8 @@ def args_static_obj_gpx_video(
                     kwargs["cleanup"] = extra_out[2]
                 if supplied_len > 3:
                     kwargs["overwrite"] = extra_out[3]
-                video.extract_sightings(sightings, project, **kwargs)
+                desc_list = video.extract_sightings(sightings, project, **kwargs)
+                cli_summary(desc_list, project, video)
             if sightings and project.get_static_object_type() == "generic static object":
                 print("extracting generic static object sightings")
                 kwargs = {"label_img": extra_out[0], "gen_gif": extra_out[1]}
@@ -99,13 +113,14 @@ def args_static_obj_gpx_video(
                     kwargs["cleanup"] = extra_out[2]
                 if supplied_len > 3:
                     kwargs["overwrite"] = extra_out[3]
-                video.extract_generic_so_sightings(sightings, project, **kwargs)
+                desc_list = video.extract_generic_so_sightings(sightings, project, **kwargs)
+                cli_summary(desc_list, project, video)
         elif frame_extract[0] and frame_extract[1]:
             print("extracting frames...")
             video.extract_frames_between(frame_extract[0], frame_extract[1])
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="Safe Sightings of Signs and Signals",
         description="Software to help verify visible traffic signs and signals using GPX and Video files",
@@ -126,6 +141,7 @@ def main():
     video_extract_group = parser.add_argument_group(
         "Extract Frames from Video File",
         "Enter Start and End Time (in seconds) for still images from video file",
+
     )
 
     # Static Object & GPX arguments
@@ -136,6 +152,7 @@ def main():
         help=".csv file to process of static road objects (Intersections, signs, etc.)",
         type=argparse.FileType("r"),
     )
+
 
     so_and_gpx_group.add_argument(
         "-gpx",
@@ -219,7 +236,7 @@ def main():
     )
 
     # process args depending on filled in values
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     sync_input = ("", "")
     frames = ("", "")
@@ -254,7 +271,8 @@ def main():
                               video_file = args.video_file,
                               vid_sync = sync_input,
                               frame_extract = frames,
-                              extra_out = lb_gif_flags
+                              extra_out = lb_gif_flags,
+                              autosync = args.autosync
                               )
 
 
