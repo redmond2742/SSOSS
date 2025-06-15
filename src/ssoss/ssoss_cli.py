@@ -1,6 +1,49 @@
 import argparse
+import re
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from . import process_road_objects
 from . import process_video
+
+
+def _timestamp_from_filename(path: str) -> str:
+    """Extract ISO 8601 timestamp from ``path``.
+
+    The filename should contain a timestamp formatted as
+    ``MM-DD-YYYY--HH-MM-SS.sss-ZZZ`` where ``ZZZ`` is a timezone
+    abbreviation such as ``UTC`` or ``PDT``. The time itself is not shifted
+    based on the timezone; the offset is simply attached to the parsed
+    timestamp.
+    """
+
+    base = Path(path).stem
+    m = re.search(
+        r"(?P<ts>\d{2}-\d{2}-\d{4}--\d{2}-\d{2}-\d{2}\.\d+)-(?P<zone>[A-Za-z]+)$",
+        base,
+    )
+    if not m:
+        raise ValueError("No timestamp found in video filename")
+
+    ts_str = m.group("ts")
+    zone = m.group("zone")
+
+    dt = datetime.strptime(ts_str, "%m-%d-%Y--%H-%M-%S.%f")
+    zone = zone.upper()
+    offset_map = {
+        "UTC": 0,
+        "PST": -8,
+        "PDT": -7,
+        "MST": -7,
+        "MDT": -6,
+        "CST": -6,
+        "CDT": -5,
+        "EST": -5,
+        "EDT": -4,
+    }
+    hours = offset_map.get(zone, 0)
+    tz = timezone(timedelta(hours=hours))
+    dt = dt.replace(tzinfo=tz)
+    return dt.isoformat()
 
 
 def args_static_obj_gpx_video(
@@ -139,6 +182,11 @@ def main():
         help="2. Sync Timestamp ('2022-10-24T14:21:54.988Z') for video. Sync with frame number also",
         type=str,
     )
+    video_sync_group.add_argument(
+        "--autosync",
+        action="store_true",
+        help="Sync using timestamp embedded in video filename",
+    )
 
     video_sync_group.add_argument(
         "--label",
@@ -175,7 +223,15 @@ def main():
 
     sync_input = ("", "")
     frames = ("", "")
-    if args.sync_frame and args.sync_timestamp:
+    if args.autosync:
+        if not args.video_file:
+            parser.error("--autosync requires --video_file")
+        try:
+            ts = _timestamp_from_filename(args.video_file.name)
+            sync_input = (1, ts)
+        except ValueError as e:
+            parser.error(str(e))
+    elif args.sync_frame and args.sync_timestamp:
         sync_input = (args.sync_frame, args.sync_timestamp)
     if args.frame_extract_start and args.frame_extract_end:
         frames = (args.frame_extract_start[0], args.frame_extract_end[0])
